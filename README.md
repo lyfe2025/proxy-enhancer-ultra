@@ -19,7 +19,7 @@ Proxy Enhancer Ultra 是一个基于 Go 语言开发的智能反向代理平台�
 - 🔐 **权限管理**：多角色权限控制，支持系统管理员和运营人员
 - 📱 **响应式设计**：支持桌面端和移动端访问
 - 🚀 **高性能**：基于 Go 的高并发处理能力
-- 🗄️ **灵活存储**：支持 Supabase 和本地 PostgreSQL
+- 🗄️ **灵活存储**：本地 PostgreSQL 数据库
 
 ## 🏗️ 技术架构
 
@@ -28,7 +28,7 @@ Proxy Enhancer Ultra 是一个基于 Go 语言开发的智能反向代理平台�
 - **核心语言**：Go 1.21+
 - **Web框架**：标准库 net/http + gorilla/mux
 - **反向代理**：net/http/httputil.ReverseProxy
-- **数据库**：Supabase PostgreSQL + GORM
+- **数据库**：PostgreSQL + GORM
 - **认证**：JWT (golang-jwt/jwt)
 - **配置管理**：Viper
 - **日志**：Logrus
@@ -58,9 +58,8 @@ Proxy Enhancer Ultra 是一个基于 Go 语言开发的智能反向代理平台�
                                 │
                                 ▼
                        ┌─────────────────┐
-                       │  Supabase       │
                        │  PostgreSQL     │
-                       │  统一数据存储   │
+                       │  本地数据存储   │
                        └─────────────────┘
 ```
 
@@ -70,7 +69,7 @@ Proxy Enhancer Ultra 是一个基于 Go 语言开发的智能反向代理平台�
 
 - Go 1.21+
 - Node.js 18+
-- PostgreSQL 12+ (或 Supabase 账户)
+- PostgreSQL 12+
 - Git
 
 ### 安装步骤
