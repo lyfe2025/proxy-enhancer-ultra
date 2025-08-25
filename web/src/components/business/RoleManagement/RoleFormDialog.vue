@@ -145,6 +145,20 @@ const isIndeterminate = computed(() => {
   return selectedCount > 0 && selectedCount < props.permissions.length
 })
 
+// 方法 - 需要在watch之前定义
+const resetForm = () => {
+  formData.value = {
+    name: '',
+    description: '',
+    permission_ids: [],
+    status: 'active'
+  }
+  selectedPermissions.value = []
+  checkAll.value = false
+  moduleCheckStatus.value = {}
+  formRef.value?.resetFields()
+}
+
 // 监听角色数据变化
 watch(() => props.role, (newRole) => {
   if (newRole && props.isEdit) {
@@ -175,19 +189,6 @@ const updateVisible = (visible: boolean) => {
 const handleClose = () => {
   resetForm()
   emit('update:visible', false)
-}
-
-const resetForm = () => {
-  formData.value = {
-    name: '',
-    description: '',
-    permission_ids: [],
-    status: 'active'
-  }
-  selectedPermissions.value = []
-  checkAll.value = false
-  moduleCheckStatus.value = {}
-  formRef.value?.resetFields()
 }
 
 const handleSave = async () => {

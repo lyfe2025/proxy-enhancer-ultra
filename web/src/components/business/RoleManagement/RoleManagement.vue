@@ -95,7 +95,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh } from '@element-plus/icons-vue'
 import DataTable from '@/components/common/DataTable/DataTable.vue'
@@ -228,6 +228,15 @@ const handleSearch = () => {
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleString('zh-CN')
 }
+
+// 组件销毁时清理弹窗
+onUnmounted(() => {
+  try {
+    ElMessageBox.close()
+  } catch (error) {
+    // 忽略关闭错误
+  }
+})
 </script>
 
 <style scoped>

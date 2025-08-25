@@ -248,10 +248,18 @@ const updateTrafficPeriod = (period: string) => {
 
 // 自动刷新
 const startAutoRefresh = () => {
+  // 确保之前的定时器已清理
+  stopAutoRefresh()
+  
   refreshTimer = setInterval(() => {
-    loadStats()
-    loadChartData('today')
-    loadSystemStatus()
+    try {
+      loadStats()
+      // 避免在自动刷新时重复加载图表数据，防止与用户操作冲突
+      // loadChartData('today')
+      loadSystemStatus()
+    } catch (error) {
+      console.warn('自动刷新时出错:', error)
+    }
   }, 30000) // 30秒刷新一次
 }
 

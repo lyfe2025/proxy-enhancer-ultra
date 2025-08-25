@@ -15,20 +15,16 @@ import (
 	"proxy-enhancer-ultra/internal/handlers"
 	"proxy-enhancer-ultra/internal/middleware"
 	"proxy-enhancer-ultra/internal/models"
-	"proxy-enhancer-ultra/internal/proxy"
 	"proxy-enhancer-ultra/internal/services"
 	"proxy-enhancer-ultra/pkg/logger"
 
-	"github.com/gorilla/mux"
-	"github.com/joho/godotenv"
-	"github.com/rs/cors"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// 加载.env文件
-	if err := godotenv.Load(); err != nil {
-		log.Printf("Warning: .env file not found or could not be loaded: %v", err)
-	}
+	// 初始化日志器
+	logger := logger.NewLogrusLogger()
 
 	// 加载配置
 	cfg, err := config.Load("config.yaml")
@@ -36,254 +32,224 @@ func main() {
 		log.Fatalf("Failed to load config: %v", err)
 	}
 
-	// 初始化日志
-	loggerInstance := logger.NewLogrusLogger()
-	logger.SetupGlobalLogger(loggerInstance)
-
-	// 数据库连接（允许失败，以便先测试代理功能）
-	var db *database.Database
-	var dbConnected bool
-
-	db, err = database.NewDatabase(cfg, loggerInstance)
-	if err != nil {
-		loggerInstance.WithFields(map[string]interface{}{
-			"error": err.Error(),
-		}).Warn("Failed to connect to database, continuing without database features")
-		dbConnected = false
-	} else {
-		dbConnected = true
-		defer db.Close()
-
-		// 执行数据库迁移
-		if err := db.AutoMigrate(
-			&models.User{},
-			&models.Role{},
-			&models.Permission{},
-			&models.UserRole{},
-			&models.RolePermission{},
-			&models.ProxyConfig{},
-			&models.Domain{},
-			&models.Rule{},
-			&models.Popup{},
-			&models.Submission{},
-			&models.ProxyLog{},
-			&models.SystemMetric{},
-		); err != nil {
-			loggerInstance.WithFields(map[string]interface{}{
-				"error": err.Error(),
-			}).Warn("Failed to migrate database, continuing without database features")
-			dbConnected = false
-		}
-	}
-
 	// 初始化JWT管理器
 	jwtManager := auth.NewJWTManager(cfg.JWT.Secret, cfg.JWT.ExpiresIn)
 
-	// 初始化服务（根据数据库连接状态）
-	var userService *services.UserService
-	var proxyService *services.ProxyService
-	var ruleService *services.RuleService
-	var popupService *services.PopupService
-	var submissionService *services.SubmissionService
-	var monitoringService *services.MonitoringService
-	var proxyServer *proxy.ProxyServer
+	// 初始化数据库
+	db, err := database.NewDatabase(cfg, logger)
+	if err != nil {
+		log.Fatalf("Failed to connect to database: %v", err)
+	}
+	defer db.Close()
 
-	if dbConnected && db != nil {
-		userService = services.NewUserService(db.DB, jwtManager, loggerInstance)
-		proxyService = services.NewProxyService(db.DB, loggerInstance)
-		ruleService = services.NewRuleService(db.DB, loggerInstance)
-		popupService = services.NewPopupService(db.DB, loggerInstance)
-		submissionService = services.NewSubmissionService(db.DB, loggerInstance)
-		monitoringService = services.NewMonitoringService(db.DB, loggerInstance)
-		proxyServer = proxy.NewProxyServer(db.DB, loggerInstance, cfg)
-	} else {
-		// 创建无数据库版本的代理服务器
-		proxyServer = proxy.NewProxyServer(nil, loggerInstance, cfg)
-		loggerInstance.Info("Running in proxy-only mode without database features")
+	// 自动迁移数据库表
+	err = db.AutoMigrate(
+		&models.User{},
+		&models.Role{},
+		&models.Permission{},
+		&models.UserRole{},
+		&models.RolePermission{},
+		&models.ProxyConfig{},
+		&models.Domain{},
+		&models.Rule{},
+		&models.Popup{},
+		&models.Submission{},
+		&models.ProxyLog{},
+		&models.SystemMetric{},
+	)
+	if err != nil {
+		log.Fatalf("Failed to migrate database: %v", err)
 	}
 
-	// 初始化处理器（根据数据库连接状态）
-	var authHandler *handlers.AuthHandler
-	var profileHandler *handlers.ProfileHandler
-	var userAdminHandler *handlers.UserAdminHandler
-	var proxyHandler *handlers.ProxyHandler
-	var ruleHandler *handlers.RuleHandler
-	var popupHandler *handlers.PopupHandler
-	var submissionHandler *handlers.SubmissionHandler
-	var monitoringHandler *handlers.MonitoringHandler
+	// 创建默认数据
+	err = db.Seed()
+	if err != nil {
+		log.Fatalf("Failed to seed database: %v", err)
+	}
 
-	if dbConnected && db != nil {
-		authHandler = handlers.NewAuthHandler(userService, loggerInstance)
-		profileHandler = handlers.NewProfileHandler(userService, loggerInstance)
-		userAdminHandler = handlers.NewUserAdminHandler(userService, loggerInstance)
-		proxyHandler = handlers.NewProxyHandler(proxyService, loggerInstance)
-		ruleHandler = handlers.NewRuleHandler(ruleService, loggerInstance)
-		popupHandler = handlers.NewPopupHandler(popupService, loggerInstance)
-		submissionHandler = handlers.NewSubmissionHandler(submissionService, loggerInstance)
-		monitoringHandler = handlers.NewMonitoringHandler(monitoringService, loggerInstance)
+	// 初始化服务
+	userService := services.NewUserService(db.DB, jwtManager, logger)
+	proxyService := services.NewProxyService(db.DB, logger)
+	popupService := services.NewPopupService(db.DB, logger)
+	ruleService := services.NewRuleService(db.DB, logger)
+	submissionService := services.NewSubmissionService(db.DB, logger)
+	monitoringService := services.NewMonitoringService(db.DB, logger)
 
-		// 启动监控服务
-		if cfg.Monitoring.MetricsEnabled {
-			go monitoringService.StartMetricsCollection(5 * time.Minute)
+	// 初始化处理器
+	authHandler := handlers.NewAuthHandler(userService, logger)
+	userAdminHandler := handlers.NewUserAdminHandler(userService, logger)
+	proxyHandler := handlers.NewProxyHandler(proxyService, logger)
+	popupHandler := handlers.NewPopupHandler(popupService, logger)
+	ruleHandler := handlers.NewRuleHandler(ruleService, logger)
+	submissionHandler := handlers.NewSubmissionHandler(submissionService, logger)
+	monitoringHandler := handlers.NewMonitoringHandler(monitoringService, logger)
+	profileHandler := handlers.NewProfileHandler(userService, logger)
+
+	// 设置Gin模式（根据环境变量）
+	if cfg.IsProduction() {
+		gin.SetMode(gin.ReleaseMode)
+	} else {
+		gin.SetMode(gin.DebugMode)
+	}
+
+	// 创建Gin引擎
+	r := gin.New()
+
+	// 添加中间件
+	r.Use(gin.LoggerWithWriter(os.Stdout))
+	r.Use(gin.Recovery())
+
+	// CORS配置
+	corsConfig := cors.DefaultConfig()
+	corsConfig.AllowOrigins = cfg.Security.CORS.AllowedOrigins
+	corsConfig.AllowMethods = cfg.Security.CORS.AllowedMethods
+	corsConfig.AllowHeaders = cfg.Security.CORS.AllowedHeaders
+	corsConfig.AllowCredentials = cfg.Security.CORS.AllowCredentials
+	r.Use(cors.New(corsConfig))
+
+	// 公共路由
+	auth := r.Group("/api/auth")
+	{
+		auth.POST("/login", gin.WrapF(authHandler.Login))
+		auth.POST("/register", gin.WrapF(authHandler.Register))
+		auth.POST("/refresh", gin.WrapF(authHandler.RefreshToken))
+	}
+
+	// 健康检查
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok", "message": "Server is running"})
+	})
+
+	// 需要认证的路由
+	protected := r.Group("/api")
+	protected.Use(func(c *gin.Context) {
+		// 将gin.Context适配为标准的http.Handler
+		handler := middleware.AuthMiddleware(jwtManager)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			c.Next()
+		}))
+		handler.ServeHTTP(c.Writer, c.Request)
+		if c.IsAborted() {
+			return
+		}
+	})
+	{
+		// 认证相关
+		auth := protected.Group("/auth")
+		{
+			auth.POST("/logout", gin.WrapF(authHandler.Logout))
+		}
+
+		// 用户相关
+		users := protected.Group("/users")
+		{
+			users.GET("/profile", gin.WrapF(profileHandler.GetProfile))
+			users.PUT("/profile", gin.WrapF(profileHandler.UpdateProfile))
+			users.POST("/change-password", gin.WrapF(profileHandler.ChangePassword))
+		}
+
+		// 代理配置
+		proxy := protected.Group("/proxy")
+		{
+			proxy.GET("/configs", gin.WrapF(proxyHandler.ListProxyConfigs))
+			proxy.POST("/configs", gin.WrapF(proxyHandler.CreateProxyConfig))
+			proxy.GET("/configs/:id", gin.WrapF(proxyHandler.GetProxyConfig))
+			proxy.PUT("/configs/:id", gin.WrapF(proxyHandler.UpdateProxyConfig))
+			proxy.DELETE("/configs/:id", gin.WrapF(proxyHandler.DeleteProxyConfig))
+			proxy.POST("/configs/:id/toggle", gin.WrapF(proxyHandler.ToggleProxyConfig))
+			proxy.GET("/configs/:id/stats", gin.WrapF(proxyHandler.GetProxyStats))
+		}
+
+		// 弹窗管理
+		popups := protected.Group("/popups")
+		{
+			popups.GET("", gin.WrapF(popupHandler.ListPopups))
+			popups.POST("", gin.WrapF(popupHandler.CreatePopup))
+			popups.GET("/:id", gin.WrapF(popupHandler.GetPopup))
+			popups.PUT("/:id", gin.WrapF(popupHandler.UpdatePopup))
+			popups.DELETE("/:id", gin.WrapF(popupHandler.DeletePopup))
+			popups.POST("/:id/toggle", gin.WrapF(popupHandler.TogglePopupStatus))
+			popups.GET("/:id/stats", gin.WrapF(popupHandler.GetPopupStats))
+		}
+
+		// 规则管理
+		rules := protected.Group("/rules")
+		{
+			rules.GET("", gin.WrapF(ruleHandler.ListRules))
+			rules.POST("", gin.WrapF(ruleHandler.CreateRule))
+			rules.GET("/:id", gin.WrapF(ruleHandler.GetRule))
+			rules.PUT("/:id", gin.WrapF(ruleHandler.UpdateRule))
+			rules.DELETE("/:id", gin.WrapF(ruleHandler.DeleteRule))
+			rules.POST("/:id/toggle", gin.WrapF(ruleHandler.ToggleRuleStatus))
+			rules.PUT("/priorities", gin.WrapF(ruleHandler.UpdateRulePriorities))
+		}
+
+		// 提交管理
+		submissions := protected.Group("/submissions")
+		{
+			submissions.GET("", gin.WrapF(submissionHandler.ListSubmissions))
+			submissions.POST("", gin.WrapF(submissionHandler.CreateSubmission))
+			submissions.GET("/:id", gin.WrapF(submissionHandler.GetSubmission))
+			submissions.PUT("/:id", gin.WrapF(submissionHandler.UpdateSubmission))
+			submissions.DELETE("/:id", gin.WrapF(submissionHandler.DeleteSubmission))
+			submissions.GET("/export", gin.WrapF(submissionHandler.ExportSubmissions))
+			submissions.DELETE("/popup/:popup_id", gin.WrapF(submissionHandler.DeleteSubmissionsByPopup))
+		}
+
+		// 系统监控
+		monitoring := protected.Group("/monitoring")
+		{
+			monitoring.GET("/health", gin.WrapF(monitoringHandler.GetHealthCheck))
+			monitoring.GET("/dashboard", gin.WrapF(monitoringHandler.GetDashboardData))
+			monitoring.GET("/metrics/system", gin.WrapF(monitoringHandler.GetSystemMetrics))
+			monitoring.GET("/metrics/proxy", gin.WrapF(monitoringHandler.GetProxyMetrics))
+		}
+
+		// 用户管理（管理员）
+		admin := users.Group("/admin")
+		admin.Use(func(c *gin.Context) {
+			// 创建一个适配器来处理AdminMiddleware
+			handler := middleware.AdminMiddleware(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				c.Next()
+			}))
+			handler.ServeHTTP(c.Writer, c.Request)
+		})
+		{
+			admin.POST("/", gin.WrapF(userAdminHandler.CreateUser))
+			admin.GET("/:id", gin.WrapF(userAdminHandler.GetUser))
+			admin.PUT("/:id", gin.WrapF(userAdminHandler.UpdateUser))
+			admin.DELETE("/:id", gin.WrapF(userAdminHandler.DeleteUser))
+			admin.GET("/", gin.WrapF(userAdminHandler.ListUsers))
 		}
 	}
 
-	// 设置路由
-	router := mux.NewRouter()
-
-	// 只有在数据库连接时才设置API路由
-	if dbConnected && db != nil {
-		// 认证路由
-		auth := router.PathPrefix("/api/auth").Subrouter()
-		auth.HandleFunc("/login", authHandler.Login).Methods("POST")
-		auth.HandleFunc("/register", authHandler.Register).Methods("POST")
-		auth.HandleFunc("/refresh", authHandler.RefreshToken).Methods("POST")
-
-		// 需要认证的auth路由
-		authProtected := auth.PathPrefix("").Subrouter()
-		authProtected.Use(middleware.AuthMiddleware(jwtManager))
-		authProtected.HandleFunc("/user-info", profileHandler.GetProfile).Methods("GET")
-		authProtected.HandleFunc("/user-info", profileHandler.UpdateProfile).Methods("PUT")
-		authProtected.HandleFunc("/logout", authHandler.Logout).Methods("POST")
-
-		// 受保护的API路由
-		api := router.PathPrefix("/api").Subrouter()
-		api.Use(middleware.AuthMiddleware(jwtManager))
-
-		// 用户相关路由
-		api.HandleFunc("/profile", profileHandler.GetProfile).Methods("GET")
-		api.HandleFunc("/profile", profileHandler.UpdateProfile).Methods("PUT")
-		api.HandleFunc("/change-password", profileHandler.ChangePassword).Methods("POST")
-
-		// 管理后台API（需要管理员权限）
-		admin := api.PathPrefix("/admin").Subrouter()
-		admin.Use(middleware.AdminMiddleware)
-
-		// 用户管理
-		admin.HandleFunc("/users", userAdminHandler.CreateUser).Methods("POST")
-		admin.HandleFunc("/users", userAdminHandler.ListUsers).Methods("GET")
-		admin.HandleFunc("/users/{id}", userAdminHandler.GetUser).Methods("GET")
-		admin.HandleFunc("/users/{id}", userAdminHandler.UpdateUser).Methods("PUT")
-		admin.HandleFunc("/users/{id}", userAdminHandler.DeleteUser).Methods("DELETE")
-
-		// 代理配置管理
-		admin.HandleFunc("/proxies", proxyHandler.CreateProxyConfig).Methods("POST")
-		admin.HandleFunc("/proxies", proxyHandler.ListProxyConfigs).Methods("GET")
-		admin.HandleFunc("/proxies/{id}", proxyHandler.GetProxyConfig).Methods("GET")
-		admin.HandleFunc("/proxies/{id}", proxyHandler.UpdateProxyConfig).Methods("PUT")
-		admin.HandleFunc("/proxies/{id}", proxyHandler.DeleteProxyConfig).Methods("DELETE")
-		admin.HandleFunc("/proxies/{id}/toggle", proxyHandler.ToggleProxyConfig).Methods("POST")
-		admin.HandleFunc("/proxies/{id}/stats", proxyHandler.GetProxyStats).Methods("GET")
-
-		// 规则管理
-		admin.HandleFunc("/rules", ruleHandler.CreateRule).Methods("POST")
-		admin.HandleFunc("/rules", ruleHandler.ListRules).Methods("GET")
-		admin.HandleFunc("/rules/{id}", ruleHandler.GetRule).Methods("GET")
-		admin.HandleFunc("/rules/{id}", ruleHandler.UpdateRule).Methods("PUT")
-		admin.HandleFunc("/rules/{id}", ruleHandler.DeleteRule).Methods("DELETE")
-		admin.HandleFunc("/rules/{id}/toggle", ruleHandler.ToggleRuleStatus).Methods("POST")
-		admin.HandleFunc("/rules/proxy/{proxy_config_id}", ruleHandler.GetRulesByProxyConfig).Methods("GET")
-		admin.HandleFunc("/rules/batch/priority", ruleHandler.UpdateRulePriorities).Methods("PUT")
-
-		// 弹窗管理
-		admin.HandleFunc("/popups", popupHandler.CreatePopup).Methods("POST")
-		admin.HandleFunc("/popups", popupHandler.ListPopups).Methods("GET")
-		admin.HandleFunc("/popups/{id}", popupHandler.GetPopup).Methods("GET")
-		admin.HandleFunc("/popups/{id}", popupHandler.UpdatePopup).Methods("PUT")
-		admin.HandleFunc("/popups/{id}", popupHandler.DeletePopup).Methods("DELETE")
-		admin.HandleFunc("/popups/{id}/toggle", popupHandler.TogglePopupStatus).Methods("POST")
-		admin.HandleFunc("/popups/proxy/{proxy_config_id}", popupHandler.GetPopupsByProxyConfig).Methods("GET")
-		admin.HandleFunc("/popups/{id}/stats", popupHandler.GetPopupStats).Methods("GET")
-
-		// 提交数据管理
-		admin.HandleFunc("/submissions", submissionHandler.ListSubmissions).Methods("GET")
-		admin.HandleFunc("/submissions/{id}", submissionHandler.GetSubmission).Methods("GET")
-		admin.HandleFunc("/submissions/{id}", submissionHandler.UpdateSubmission).Methods("PUT")
-		admin.HandleFunc("/submissions/{id}", submissionHandler.DeleteSubmission).Methods("DELETE")
-		admin.HandleFunc("/submissions/popup/{popup_id}", submissionHandler.GetSubmissionsByPopup).Methods("GET")
-		admin.HandleFunc("/submissions/stats", submissionHandler.GetSubmissionStats).Methods("GET")
-		admin.HandleFunc("/submissions/export", submissionHandler.ExportSubmissions).Methods("GET")
-		admin.HandleFunc("/submissions/date-range", submissionHandler.GetSubmissionsByDateRange).Methods("GET")
-
-		// 监控相关路由
-		admin.HandleFunc("/monitoring/system", monitoringHandler.GetSystemMetrics).Methods("GET")
-		admin.HandleFunc("/monitoring/proxy", monitoringHandler.GetProxyMetrics).Methods("GET")
-		admin.HandleFunc("/monitoring/stats", monitoringHandler.GetOverallStats).Methods("GET")
-		admin.HandleFunc("/monitoring/system/history", monitoringHandler.GetSystemMetricsHistory).Methods("GET")
-		admin.HandleFunc("/monitoring/proxy/history", monitoringHandler.GetProxyMetricsHistory).Methods("GET")
-		admin.HandleFunc("/monitoring/proxy/{proxy_config_id}/stats", monitoringHandler.GetProxyStats).Methods("GET")
-		admin.HandleFunc("/monitoring/cleanup", monitoringHandler.CleanupOldMetrics).Methods("POST")
-		admin.HandleFunc("/monitoring/dashboard", monitoringHandler.GetDashboardData).Methods("GET")
-
-		// 公共API路由（不需要认证）
-		public := router.PathPrefix("/api/public").Subrouter()
-		public.HandleFunc("/submissions", submissionHandler.CreateSubmission).Methods("POST")
-
-		// 健康检查和监控端点
-		router.HandleFunc(cfg.Monitoring.HealthCheckPath, monitoringHandler.GetHealthCheck).Methods("GET")
-		router.HandleFunc(cfg.Monitoring.MetricsPath, monitoringHandler.GetSystemMetrics).Methods("GET")
-	}
-
-	// 静态文件服务（前端）
-	staticDir := "./web/dist"
-	if _, err := os.Stat(staticDir); err == nil {
-		fs := http.FileServer(http.Dir(staticDir))
-		router.PathPrefix("/static/").Handler(http.StripPrefix("/static/", fs))
-	}
-
-	// 代理处理（处理所有其他请求）
-	router.PathPrefix("/").HandlerFunc(proxyServer.ServeHTTP)
-
-	// 设置CORS
-	c := cors.New(cors.Options{
-		AllowedOrigins:   cfg.Security.CORS.AllowedOrigins,
-		AllowedMethods:   cfg.Security.CORS.AllowedMethods,
-		AllowedHeaders:   cfg.Security.CORS.AllowedHeaders,
-		AllowCredentials: cfg.Security.CORS.AllowCredentials,
-	})
-
-	// 应用中间件
-	handler := middleware.LoggingMiddleware(loggerInstance)(middleware.RecoveryMiddleware(loggerInstance)(c.Handler(router)))
-
-	// 如果启用了限流，应用限流中间件
-	handler = middleware.RateLimitMiddleware(cfg.Security.RateLimit.RequestsPerMinute)(handler)
-
 	// 创建HTTP服务器
 	srv := &http.Server{
-		Addr:         cfg.GetAddr(),
-		Handler:      handler,
-		ReadTimeout:  cfg.Server.ReadTimeout,
-		WriteTimeout: cfg.Server.WriteTimeout,
-		IdleTimeout:  cfg.Server.IdleTimeout,
+		Addr:    cfg.GetAddr(),
+		Handler: r,
 	}
 
 	// 启动服务器
 	go func() {
-		loggerInstance.WithFields(map[string]interface{}{
-			"address": cfg.GetAddr(),
-		}).Info("Starting HTTP server")
-
-		loggerInstance.Info("Starting HTTP server")
+		log.Printf("Server starting on %s", cfg.GetAddr())
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			loggerInstance.WithFields(map[string]interface{}{
-				"error": err.Error(),
-			}).Fatal("Failed to start HTTP server")
+			log.Fatalf("Failed to start server: %v", err)
 		}
 	}()
 
-	// 等待中断信号
+	// 等待中断信号以优雅地关闭服务器
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
-	loggerInstance.Info("Shutting down server...")
+	log.Println("Shutting down server...")
 
-	// 优雅关闭
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	// 5秒超时的上下文
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
+	// 优雅关闭服务器
 	if err := srv.Shutdown(ctx); err != nil {
-		loggerInstance.Fatal("Server forced to shutdown:", err)
+		log.Fatal("Server forced to shutdown:", err)
 	}
 
-	loggerInstance.Info("Server exited")
+	log.Println("Server exited")
 }

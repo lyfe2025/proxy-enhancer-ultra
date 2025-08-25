@@ -8,7 +8,7 @@
             <el-icon><TrendCharts /></el-icon>
             流量趋势
           </span>
-          <el-select v-model="trafficPeriod" size="small" style="width: 120px" @change="updateTrafficChart">
+          <el-select v-model="trafficPeriod" size="small" style="width: 120px" @change="handlePeriodChange">
             <el-option label="今日" value="today" />
             <el-option label="本周" value="week" />
             <el-option label="本月" value="month" />
@@ -38,7 +38,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch } from 'vue'
+import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
 import { TrendCharts, PieChart } from '@element-plus/icons-vue'
 import * as echarts from 'echarts'
 
@@ -75,8 +75,13 @@ onUnmounted(() => {
 // 监听数据变化
 watch(
   () => props.chartData,
-  () => {
-    updateCharts()
+  (newData, oldData) => {
+    // 避免在数据相同时重复更新，防止无限循环
+    if (newData && (newData !== oldData)) {
+      nextTick(() => {
+        updateCharts()
+      })
+    }
   },
   { deep: true }
 )
@@ -157,6 +162,10 @@ const updateTrafficChart = () => {
   }
   
   trafficChart.setOption(option)
+}
+
+// 处理用户手动更改周期
+const handlePeriodChange = () => {
   emit('updatePeriod', trafficPeriod.value)
 }
 
@@ -211,10 +220,19 @@ const handleResize = () => {
 }
 
 const destroyCharts = () => {
-  trafficChart?.dispose()
-  proxyStatusChart?.dispose()
-  trafficChart = null
-  proxyStatusChart = null
+  try {
+    if (trafficChart && !trafficChart.isDisposed()) {
+      trafficChart.dispose()
+    }
+    if (proxyStatusChart && !proxyStatusChart.isDisposed()) {
+      proxyStatusChart.dispose()
+    }
+  } catch (error) {
+    console.warn('清理图表实例时出错:', error)
+  } finally {
+    trafficChart = null
+    proxyStatusChart = null
+  }
 }
 
 // 格式化字节数

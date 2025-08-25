@@ -11,42 +11,42 @@ export const popupApi = {
     search?: string
     is_active?: boolean
   }) {
-    return api.get<PaginatedResponse<Popup>>('/api/admin/popups', { params })
+    return api.get('/api/popups', { params })
   },
   
   // 获取单个弹窗
   getPopup(id: number) {
-    return api.get<Popup>(`/popups/${id}`)
+    return api.get<Popup>(`/api/popups/${id}`)
   },
   
   // 创建弹窗
   createPopup(data: Omit<Popup, 'id' | 'created_at' | 'updated_at'>) {
-    return api.post<Popup>('/api/admin/popups', data)
+    return api.post<Popup>('/api/popups', data)
   },
   
   // 更新弹窗
   updatePopup(id: number, data: Partial<Omit<Popup, 'id' | 'created_at' | 'updated_at'>>) {
-    return api.put<Popup>(`/popups/${id}`, data)
+    return api.put<Popup>(`/api/popups/${id}`, data)
   },
   
   // 删除弹窗
   deletePopup(id: number) {
-    return api.delete<null>(`/popups/${id}`)
+    return api.delete<null>(`/api/popups/${id}`)
   },
   
   // 启用/禁用弹窗
   togglePopup(id: number, is_active: boolean) {
-    return api.patch<Popup>(`/popups/${id}/toggle`, { is_active })
+    return api.post<Popup>(`/api/popups/${id}/toggle`, { is_active })
   },
   
   // 预览弹窗
   previewPopup(id: number) {
-    return api.get<{ html: string; css: string; js: string }>(`/popups/${id}/preview`)
+    return api.get<{ html: string; css: string; js: string }>(`/api/popups/${id}/preview`)
   },
   
   // 复制弹窗
   duplicatePopup(id: number, name: string) {
-    return api.post<Popup>(`/popups/${id}/duplicate`, { name })
+    return api.post<Popup>(`/api/popups/${id}/duplicate`, { name })
   }
 }
 
@@ -61,22 +61,22 @@ export const submissionApi = {
     end_date?: string
     search?: string
   }) {
-    return api.get<PaginatedResponse<Submission>>('/api/admin/submissions', { params })
+    return api.get<PaginatedResponse<Submission>>('/api/submissions', { params })
   },
   
   // 获取单个提交数据
   getSubmission(id: number) {
-    return api.get<Submission>(`/submissions/${id}`)
+    return api.get<Submission>(`/api/submissions/${id}`)
   },
   
   // 删除提交数据
   deleteSubmission(id: number) {
-    return api.delete<null>(`/submissions/${id}`)
+    return api.delete<null>(`/api/submissions/${id}`)
   },
   
   // 批量删除提交数据
   batchDeleteSubmissions(ids: number[]) {
-    return api.post<null>('/api/admin/submissions/batch-delete', { ids })
+    return api.post<null>('/api/submissions/batch-delete', { ids })
   },
   
   // 导出提交数据
@@ -86,7 +86,7 @@ export const submissionApi = {
     end_date?: string
     format?: 'csv' | 'excel' | 'json'
   }) {
-    return api.get<{ download_url: string }>('/api/admin/submissions/export', { params })
+    return api.get<{ download_url: string }>('/api/submissions/export', { params })
   },
   
   // 获取提交数据统计
@@ -101,6 +101,6 @@ export const submissionApi = {
       unique_visitors: number
       conversion_rate: number
       chart_data: { date: string; count: number }[]
-    }>('/submissions/stats', { params })
+    }>('/api/submissions/stats', { params })
   }
 }

@@ -60,18 +60,23 @@ const handleLogin = async (formData: any) => {
   loading.value = true
   
   try {
-    await authStore.login({
+    const result = await authStore.login({
       username: formData.username,
       password: formData.password,
       captcha: showCaptcha.value ? formData.captcha : undefined,
       rememberMe: formData.remember
     })
     
-    ElMessage.success('登录成功')
-    
-    // 跳转到目标页面或仪表盘
-    const redirect = route.query.redirect as string
-    router.push(redirect || '/dashboard')
+    if (result.success) {
+      ElMessage.success('登录成功')
+      
+      // 跳转到目标页面或仪表盘
+      const redirect = route.query.redirect as string
+      router.push(redirect || '/dashboard')
+    } else {
+      // 登录失败，显示错误消息
+      ElMessage.error(result.message || '登录失败，请稍后重试')
+    }
   } catch (error: any) {
     console.error('登录失败:', error)
     

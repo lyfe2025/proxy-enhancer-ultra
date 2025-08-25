@@ -54,10 +54,10 @@ type JWTConfig struct {
 
 // ProxyConfig 代理配置
 type ProxyConfig struct {
-	Timeout               time.Duration `mapstructure:"timeout"`
-	MaxIdleConns          int           `mapstructure:"max_idle_conns"`
-	MaxIdleConnsPerHost   int           `mapstructure:"max_idle_conns_per_host"`
-	IdleConnTimeout       time.Duration `mapstructure:"idle_conn_timeout"`
+	Timeout             time.Duration `mapstructure:"timeout"`
+	MaxIdleConns        int           `mapstructure:"max_idle_conns"`
+	MaxIdleConnsPerHost int           `mapstructure:"max_idle_conns_per_host"`
+	IdleConnTimeout     time.Duration `mapstructure:"idle_conn_timeout"`
 }
 
 // LoggingConfig 日志配置
@@ -107,9 +107,9 @@ type RedisConfig struct {
 
 // MonitoringConfig 监控配置
 type MonitoringConfig struct {
-	MetricsEnabled   bool   `mapstructure:"metrics_enabled"`
-	HealthCheckPath  string `mapstructure:"health_check_path"`
-	MetricsPath      string `mapstructure:"metrics_path"`
+	MetricsEnabled  bool   `mapstructure:"metrics_enabled"`
+	HealthCheckPath string `mapstructure:"health_check_path"`
+	MetricsPath     string `mapstructure:"metrics_path"`
 }
 
 // Load 加载配置文件
@@ -119,14 +119,22 @@ func Load(configPath string) (*Config, error) {
 	viper.AutomaticEnv()
 
 	// 设置环境变量替换
-    viper.SetEnvPrefix("")
-    viper.BindEnv("database.postgres.host", "DB_HOST")
-    viper.BindEnv("database.postgres.port", "DB_PORT")
-    viper.BindEnv("database.postgres.user", "DB_USER")
-    viper.BindEnv("database.postgres.password", "DB_PASSWORD")
-    viper.BindEnv("database.postgres.dbname", "DB_NAME")
-    viper.BindEnv("database.postgres.sslmode", "DB_SSL_MODE")
-    viper.BindEnv("jwt.secret", "JWT_SECRET")
+	viper.SetEnvPrefix("")
+
+	// 服务器配置环境变量绑定
+	viper.BindEnv("server.host", "SERVER_HOST")
+	viper.BindEnv("server.port", "SERVER_PORT")
+
+	// 数据库配置环境变量绑定
+	viper.BindEnv("database.postgres.host", "DB_HOST")
+	viper.BindEnv("database.postgres.port", "DB_PORT")
+	viper.BindEnv("database.postgres.user", "DB_USER")
+	viper.BindEnv("database.postgres.password", "DB_PASSWORD")
+	viper.BindEnv("database.postgres.dbname", "DB_NAME")
+	viper.BindEnv("database.postgres.sslmode", "DB_SSL_MODE")
+
+	// JWT配置环境变量绑定
+	viper.BindEnv("jwt.secret", "JWT_SECRET")
 
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("failed to read config file: %w", err)

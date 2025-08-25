@@ -9,6 +9,7 @@ import (
 	"proxy-enhancer-ultra/internal/models"
 	"proxy-enhancer-ultra/pkg/logger"
 
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -49,8 +50,18 @@ func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 		return nil, errors.New("invalid username or password")
 	}
 
-	// 生成JWT token (暂时使用默认角色)
-	token, err := s.jwtManager.GenerateToken(user.ID, user.Username, "user")
+	// 获取用户角色
+	userRole, err := s.getUserRole(user.ID)
+	if err != nil {
+		s.logger.WithFields(map[string]interface{}{
+			"user_id": user.ID,
+			"error":   err.Error(),
+		}).Warn("Failed to get user role, using default role 'user'")
+		userRole = "user" // 默认角色
+	}
+
+	// 生成JWT token
+	token, err := s.jwtManager.GenerateToken(user.ID, user.Username, userRole)
 	if err != nil {
 		return nil, fmt.Errorf("failed to generate token: %w", err)
 	}
@@ -63,6 +74,7 @@ func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 	s.logger.WithFields(map[string]interface{}{
 		"user_id":  user.ID,
 		"username": user.Username,
+		"role":     userRole,
 	}).Info("User logged in successfully")
 
 	return &LoginResponse{
@@ -71,10 +83,10 @@ func (s *AuthService) Login(req *LoginRequest) (*LoginResponse, error) {
 			ID:       user.ID,
 			Username: user.Username,
 			Email:    user.Email,
-			Role:     "user",        // 默认角色
-			Enabled:  user.IsActive, // 使用IsActive字段
+			Role:     userRole,
+			Enabled:  user.IsActive,
 		},
-		ExpiresAt: time.Now().Add(24 * time.Hour), // 假设token有效期为24小时
+		ExpiresAt: time.Now().Add(24 * time.Hour),
 	}, nil
 }
 
@@ -104,4 +116,24 @@ func (s *AuthService) RefreshToken(tokenString string) (*LoginResponse, error) {
 		User:      userInfo,
 		ExpiresAt: time.Now().Add(24 * time.Hour),
 	}, nil
+}
+
+// getUserRole 获取用户角色
+func (s *AuthService) getUserRole(userID uuid.UUID) (string, error) {
+	// 查询用户角色关联
+	var userRole models.UserRole
+	if err := s.db.Where("user_id = ?", userID).First(&userRole).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			return "user", nil // 如果没有分配角色，默认为普通用户
+		}
+		return "", fmt.Errorf("failed to query user role: %w", err)
+	}
+
+	// 查询角色信息
+	var role models.Role
+	if err := s.db.Where("id = ?", userRole.RoleID).First(&role).Error; err != nil {
+		return "", fmt.Errorf("failed to query role: %w", err)
+	}
+
+	return role.Name, nil
 }

@@ -13,18 +13,27 @@ export interface LoginRequest {
 // 登录响应数据
 export interface LoginResponse {
   token: string
-  refreshToken: string
-  expiresIn: number
   user: {
-    id: number
+    id: string // UUID类型，后端返回字符串
     username: string
     email: string
-    nickname?: string
-    avatar?: string
-    roleId: number
-    roleName: string
-    permissions: string[]
+    role: string // 后端返回role字段而不是roleName
+    enabled: boolean // 后端返回enabled字段
   }
+  expires_at: string // 后端返回expires_at字段
+}
+
+// API返回的用户登录响应（包装在ApiResponse中的data字段）
+export interface ApiLoginResponse {
+  token: string
+  user: {
+    id: string
+    username: string
+    email: string
+    role: string
+    enabled: boolean
+  }
+  expires_at: string
 }
 
 // 注册请求参数
@@ -70,83 +79,83 @@ export interface CaptchaResponse {
 
 // 登录
 export const login = (data: LoginRequest) => {
-  return api.post<ApiResponse<LoginResponse>>('/api/auth/login', data)
+  return api.post<ApiResponse<ApiLoginResponse>>('/auth/login', data)
 }
 
 // 注册
 export const register = (data: RegisterRequest) => {
-  return api.post<ApiResponse<{ message: string }>>('/api/auth/register', data)
+  return api.post<ApiResponse<{ message: string }>>('/auth/register', data)
 }
 
 // 登出
 export const logout = () => {
-  return api.post<ApiResponse<void>>('/api/auth/logout')
+  return api.post<ApiResponse<void>>('/auth/logout')
 }
 
 // 刷新token
 export const refreshToken = (refreshToken: string) => {
-  return api.post<ApiResponse<{ token: string; expiresIn: number }>>('/api/auth/refresh', {
+  return api.post<ApiResponse<{ token: string; expiresIn: number }>>('/auth/refresh', {
     refreshToken
   })
 }
 
 // 获取当前用户信息
 export const getCurrentUser = () => {
-  return api.get<ApiResponse<LoginResponse['user']>>('/api/profile')
+  return api.get<ApiResponse<LoginResponse['user']>>('/profile')
 }
 
 // 更新用户信息
 export const updateProfile = (data: UpdateProfileRequest) => {
-  return api.put<ApiResponse<LoginResponse['user']>>('/api/profile', data)
+  return api.put<ApiResponse<LoginResponse['user']>>('/profile', data)
 }
 
 // 修改密码
 export const changePassword = (data: ChangePasswordRequest) => {
-  return api.post<ApiResponse<void>>('/api/change-password', data)
+  return api.post<ApiResponse<void>>('/change-password', data)
 }
 
 // 发送重置密码邮件
 export const sendResetPasswordEmail = (email: string) => {
-  return api.post<ApiResponse<{ message: string }>>('/api/auth/reset-password/send', { email })
+  return api.post<ApiResponse<{ message: string }>>('/auth/reset-password/send', { email })
 }
 
 // 重置密码
 export const resetPassword = (data: ResetPasswordRequest) => {
-  return api.post<ApiResponse<{ message: string }>>('/api/auth/reset-password', data)
+  return api.post<ApiResponse<{ message: string }>>('/auth/reset-password', data)
 }
 
 // 获取验证码
 export const getCaptcha = () => {
-  return api.get<ApiResponse<CaptchaResponse>>('/api/auth/captcha')
+  return api.get<ApiResponse<CaptchaResponse>>('/auth/captcha')
 }
 
 // 验证邮箱
 export const verifyEmail = (token: string) => {
-  return api.post<ApiResponse<{ message: string }>>('/api/auth/verify-email', { token })
+  return api.post<ApiResponse<{ message: string }>>('/auth/verify-email', { token })
 }
 
 // 重新发送验证邮件
 export const resendVerificationEmail = () => {
-  return api.post<ApiResponse<{ message: string }>>('/api/auth/resend-verification')
+  return api.post<ApiResponse<{ message: string }>>('/auth/resend-verification')
 }
 
 // 检查用户名是否可用
 export const checkUsernameAvailable = (username: string) => {
-  return api.get<ApiResponse<{ available: boolean }>>('/api/auth/check-username', {
+  return api.get<ApiResponse<{ available: boolean }>>('/auth/check-username', {
     params: { username }
   })
 }
 
 // 检查邮箱是否可用
 export const checkEmailAvailable = (email: string) => {
-  return api.get<ApiResponse<{ available: boolean }>>('/api/auth/check-email', {
+  return api.get<ApiResponse<{ available: boolean }>>('/auth/check-email', {
     params: { email }
   })
 }
 
 // 绑定第三方账号
 export const bindThirdPartyAccount = (provider: string, code: string) => {
-  return api.post<ApiResponse<{ message: string }>>('/api/auth/bind', {
+  return api.post<ApiResponse<{ message: string }>>('/auth/bind', {
     provider,
     code
   })
@@ -179,17 +188,17 @@ export const toggleTwoFactorAuth = (enabled: boolean, code?: string) => {
 
 // 验证两步验证码
 export const verifyTwoFactorCode = (code: string) => {
-  return api.post<ApiResponse<{ valid: boolean }>>('/api/auth/2fa/verify', { code })
+  return api.post<ApiResponse<{ valid: boolean }>>('/auth/2fa/verify', { code })
 }
 
 // 获取用户信息
 export const getUserInfo = () => {
-  return api.get<ApiResponse<LoginResponse>>('/api/auth/user-info')
+  return api.get<ApiResponse<LoginResponse>>('/auth/user-info')
 }
 
 // 更新用户信息
 export const updateUserInfo = (data: UpdateProfileRequest) => {
-  return api.put<ApiResponse<LoginResponse['user']>>('/api/auth/user-info', data)
+  return api.put<ApiResponse<LoginResponse['user']>>('/auth/user-info', data)
 }
 
 // 忘记密码

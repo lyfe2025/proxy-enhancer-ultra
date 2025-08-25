@@ -1,6 +1,6 @@
 // 用户类型
 export interface User {
-  id: number
+  id: string // 改为string类型以匹配后端UUID
   username: string
   email: string
   nickname?: string

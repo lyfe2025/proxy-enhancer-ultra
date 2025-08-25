@@ -2,8 +2,7 @@ import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { User, LoginResponse } from '@/types/auth'
 import * as authApi from '@/api/auth'
-import { ElMessage } from 'element-plus'
-import router from '@/router'
+import type { ApiLoginResponse } from '@/api/auth'
 
 export const useAuthStore = defineStore('auth', () => {
   // 状态
@@ -26,45 +25,48 @@ export const useAuthStore = defineStore('auth', () => {
       isLoading.value = true
       const response = await authApi.login(loginForm)
       
-      if (response.data.success) {
-        token.value = response.data.data.token
+      console.log('登录响应:', response) // 调试日志
+      
+      // 直接访问 response 的属性，响应拦截器已经返回了 ApiResponse 格式
+      if ((response as any).success) {
+        const apiResponse = response as any
+        const loginData = apiResponse.data as ApiLoginResponse
+        token.value = loginData.token
+        
         // 转换用户数据以匹配我们的 User 类型
-        const userData = response.data.data.user
+        const userData = loginData.user
         user.value = {
-          id: userData.id,
+          id: userData.id, // 现在是string类型的UUID
           username: userData.username,
           email: userData.email,
-          nickname: userData.nickname,
-          avatar: userData.avatar,
-          phone: undefined, // API 响应中没有 phone 字段
-          role: userData.roleName,
-          status: 'active', // 假设登录的用户都是活跃状态
-                  permissions: userData.permissions || [],
+          nickname: undefined, // 后端没有返回nickname字段
+          avatar: undefined, // 后端没有返回avatar字段
+          phone: undefined, // 后端没有返回phone字段
+          role: userData.role, // 使用role字段而不是roleName
+          status: userData.enabled ? 'active' : 'inactive', // 根据enabled字段设置状态
+          permissions: [], // 后端没有返回permissions字段，设为空数组
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          lastLoginAt: undefined
+          lastLoginAt: new Date().toISOString() // 设置为当前登录时间
         }
-        permissions.value = userData.permissions || []
+        permissions.value = [] // 后端没有返回permissions，设为空数组
         
         // 存储token和用户信息
         localStorage.setItem('token', token.value!)
         localStorage.setItem('user', JSON.stringify(user.value))
-        localStorage.setItem('permissions', JSON.stringify(userData.permissions || []))
+        localStorage.setItem('permissions', JSON.stringify([]))
         
-        ElMessage.success('登录成功')
-        
-        // 跳转到仪表盘
-        router.push('/dashboard')
-        
+        console.log('登录成功，用户信息:', user.value) // 调试日志
+        console.log('用户角色:', user.value.role, '是否为admin:', user.value.role === 'admin') // 调试日志
         return { success: true }
       } else {
-        ElMessage.error(response.data.message || '登录失败')
-        return { success: false, message: response.data.message }
+        const apiResponse = response as any
+        console.error('登录失败:', apiResponse.message) // 调试日志
+        return { success: false, message: apiResponse.message }
       }
     } catch (error: any) {
       console.error('登录错误:', error)
       const message = error.response?.data?.message || error.message || '登录失败，请稍后重试'
-      ElMessage.error(message)
       return { success: false, message }
     } finally {
       isLoading.value = false
@@ -78,16 +80,13 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authApi.register(registerForm)
       
       if (response.data.success) {
-        ElMessage.success('注册成功，请登录')
         return { success: true }
       } else {
-        ElMessage.error(response.data.message || '注册失败')
         return { success: false, message: response.data.message }
       }
     } catch (error: any) {
       console.error('注册错误:', error)
       const message = error.response?.data?.message || error.message || '注册失败，请稍后重试'
-      ElMessage.error(message)
       return { success: false, message }
     } finally {
       isLoading.value = false
@@ -113,10 +112,7 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.removeItem('user')
       localStorage.removeItem('permissions')
       
-      ElMessage.success('已退出登录')
-      
-      // 跳转到登录页
-      router.push('/login')
+      // 注意：组件层需要处理退出成功提示和页面跳转
     }
   }
 
@@ -131,24 +127,24 @@ export const useAuthStore = defineStore('auth', () => {
         // 转换用户数据以匹配我们的 User 类型
         const userData = response.data.data.user
         user.value = {
-          id: userData.id,
+          id: userData.id, // 现在是string类型的UUID
           username: userData.username,
           email: userData.email,
-          nickname: userData.nickname,
-          avatar: userData.avatar,
-          phone: undefined, // API 响应中没有 phone 字段
-          role: userData.roleName,
-          status: 'active', // 假设登录的用户都是活跃状态
-                  permissions: userData.permissions || [],
+          nickname: undefined, // 后端没有返回nickname字段
+          avatar: undefined, // 后端没有返回avatar字段
+          phone: undefined, // 后端没有返回phone字段
+          role: userData.role, // 使用role字段而不是roleName
+          status: userData.enabled ? 'active' : 'inactive', // 根据enabled字段设置状态
+          permissions: [], // 后端没有返回permissions字段，设为空数组
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
-          lastLoginAt: undefined
+          lastLoginAt: new Date().toISOString() // 设置为当前时间
         }
-        permissions.value = userData.permissions || []
+        permissions.value = [] // 后端没有返回permissions，设为空数组
         
         // 更新本地存储
         localStorage.setItem('user', JSON.stringify(user.value))
-        localStorage.setItem('permissions', JSON.stringify(userData.permissions || []))
+        localStorage.setItem('permissions', JSON.stringify([]))
         
         return true
       } else {
@@ -172,16 +168,13 @@ export const useAuthStore = defineStore('auth', () => {
       if (response.data.success) {
         user.value = { ...user.value!, ...response.data.data }
         localStorage.setItem('user', JSON.stringify(user.value))
-        ElMessage.success('用户信息更新成功')
         return { success: true }
       } else {
-        ElMessage.error(response.data.message || '更新失败')
         return { success: false, message: response.data.message }
       }
     } catch (error: any) {
       console.error('更新用户信息失败:', error)
       const message = error.response?.data?.message || error.message || '更新失败，请稍后重试'
-      ElMessage.error(message)
       return { success: false, message }
     } finally {
       isLoading.value = false
@@ -195,17 +188,14 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authApi.changePassword({ oldPassword, newPassword, confirmPassword: newPassword })
       
       if (response.data.success) {
-        ElMessage.success('密码修改成功，请重新登录')
         await logout()
-        return { success: true }
+        return { success: true, message: '密码修改成功，请重新登录' }
       } else {
-        ElMessage.error(response.data.message || '密码修改失败')
         return { success: false, message: response.data.message }
       }
     } catch (error: any) {
       console.error('修改密码失败:', error)
       const message = error.response?.data?.message || error.message || '密码修改失败，请稍后重试'
-      ElMessage.error(message)
       return { success: false, message }
     } finally {
       isLoading.value = false
@@ -219,16 +209,13 @@ export const useAuthStore = defineStore('auth', () => {
       const response = await authApi.forgotPassword(email)
       
       if (response.data.success) {
-        ElMessage.success('重置邮件已发送，请查收邮箱')
-        return { success: true }
+        return { success: true, message: '重置邮件已发送，请查收邮箱' }
       } else {
-        ElMessage.error(response.data.message || '发送失败')
         return { success: false, message: response.data.message }
       }
     } catch (error: any) {
       console.error('发送重置邮件失败:', error)
       const message = error.response?.data?.message || error.message || '发送失败，请稍后重试'
-      ElMessage.error(message)
       return { success: false, message }
     } finally {
       isLoading.value = false
@@ -237,6 +224,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   // 检查权限
   const hasPermission = (permission: string) => {
+    // admin 角色拥有所有权限
+    if (user.value?.role === 'admin') {
+      return true
+    }
     if (!permissions.value.length) return false
     return permissions.value.includes(permission) || permissions.value.includes('*')
   }

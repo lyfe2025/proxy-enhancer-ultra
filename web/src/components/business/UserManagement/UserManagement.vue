@@ -110,7 +110,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Plus, Refresh, User } from '@element-plus/icons-vue'
 import DataTable from '@/components/common/DataTable/DataTable.vue'
@@ -314,6 +314,15 @@ const getRoleTagType = (roleName?: string): 'primary' | 'success' | 'warning' | 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleString('zh-CN')
 }
+
+// 组件销毁时清理弹窗
+onUnmounted(() => {
+  try {
+    ElMessageBox.close()
+  } catch (error) {
+    // 忽略关闭错误
+  }
+})
 </script>
 
 <style scoped>

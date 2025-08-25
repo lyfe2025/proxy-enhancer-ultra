@@ -27,6 +27,7 @@
 </template>
 
 <script setup lang="ts">
+import { onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import {
@@ -69,6 +70,15 @@ const handleCommand = async (command: string) => {
       break
   }
 }
+
+// 组件销毁时清理弹窗
+onUnmounted(() => {
+  try {
+    ElMessageBox.close()
+  } catch (error) {
+    // 忽略关闭错误
+  }
+})
 </script>
 
 <style scoped>

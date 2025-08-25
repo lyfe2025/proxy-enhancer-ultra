@@ -130,9 +130,10 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
-import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
-import { Plus, Refresh, Search } from '@element-plus/icons-vue'
+import { ref, computed, onUnmounted } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import type { FormInstance } from 'element-plus'
+import { Plus, Refresh } from '@element-plus/icons-vue'
 import type { Permission, PermissionForm } from '@/types/system'
 // import { permissionApi } from '@/api/system' // TODO: 实现API
 
@@ -328,6 +329,15 @@ const getModuleTagType = (module?: string): 'primary' | 'success' | 'warning' | 
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleString('zh-CN')
 }
+
+// 组件销毁时清理弹窗
+onUnmounted(() => {
+  try {
+    ElMessageBox.close()
+  } catch (error) {
+    // 忽略关闭错误
+  }
+})
 </script>
 
 <style scoped>

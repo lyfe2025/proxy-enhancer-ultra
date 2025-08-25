@@ -155,16 +155,16 @@ const loadStats = async () => {
 const loadPopups = async () => {
   popupLoading.value = true
   try {
-    // 实际实现应该调用弹窗API
     const response = await popupApi.getPopups({
       page: popupPagination.page,
       page_size: popupPagination.size
     })
-    popupsList.value = response.data.data?.items || []
-    popupPagination.total = response.data.data?.total || 0
-  } catch (error) {
+    // 修复API响应结构：后端返回 {data: popups, pagination: {...}}
+    popupsList.value = (response.data as any).data || []
+    popupPagination.total = (response.data as any).pagination?.total || 0
+  } catch (error: any) {
     console.error('加载弹窗列表失败:', error)
-    ElMessage.error('加载弹窗列表失败')
+    ElMessage.error(`加载弹窗列表失败: ${error?.message || error}`)
   } finally {
     popupLoading.value = false
   }

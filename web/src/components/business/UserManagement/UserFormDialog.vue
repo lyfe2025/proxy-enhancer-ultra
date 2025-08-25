@@ -103,6 +103,20 @@ const formData = ref<UserForm>({
   is_active: true
 })
 
+// 方法 - 需要在watch之前定义
+const resetForm = () => {
+  formData.value = {
+    username: '',
+    email: '',
+    password: '',
+    confirm_password: '',
+    role_id: '',
+    status: 'active',
+    is_active: true
+  }
+  formRef.value?.resetFields()
+}
+
 // 表单验证规则
 const formRules = {
   username: [
@@ -135,6 +149,15 @@ const formRules = {
   ]
 }
 
+const updateVisible = (visible: boolean) => {
+  emit('update:visible', visible)
+}
+
+const handleClose = () => {
+  resetForm()
+  emit('update:visible', false)
+}
+
 // 监听用户数据变化
 watch(() => props.user, (newUser) => {
   if (newUser && props.isEdit) {
@@ -156,29 +179,6 @@ watch(() => props.user, (newUser) => {
     resetForm()
   }
 }, { immediate: true })
-
-// 方法
-const updateVisible = (visible: boolean) => {
-  emit('update:visible', visible)
-}
-
-const handleClose = () => {
-  resetForm()
-  emit('update:visible', false)
-}
-
-const resetForm = () => {
-  formData.value = {
-    username: '',
-    email: '',
-    password: '',
-    confirm_password: '',
-    role_id: '',
-    status: 'active',
-    is_active: true
-  }
-  formRef.value?.resetFields()
-}
 
 const handleSave = async () => {
   if (!formRef.value) return

@@ -223,6 +223,15 @@ const needsAuth = computed(() => {
   return ['http', 'https', 'socks5'].includes(formData.type!)
 })
 
+// 重置表单 - 移到watch之前定义
+const resetForm = () => {
+  Object.assign(formData, { ...DEFAULT_PROXY_FORM })
+  activeCollapse.value = []
+  nextTick(() => {
+    formRef.value?.clearValidate()
+  })
+}
+
 // 监听编辑数据变化
 watch(
   () => props.editData,
@@ -250,15 +259,6 @@ watch(
     }
   }
 )
-
-// 重置表单
-const resetForm = () => {
-  Object.assign(formData, { ...DEFAULT_PROXY_FORM })
-  activeCollapse.value = []
-  nextTick(() => {
-    formRef.value?.clearValidate()
-  })
-}
 
 // 处理关闭
 const handleClose = () => {

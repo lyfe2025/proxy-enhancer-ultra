@@ -112,7 +112,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onUnmounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   Document,
@@ -284,6 +284,16 @@ const getStatusText = (status: string) => {
 const formatDate = (dateString: string) => {
   return new Date(dateString).toLocaleString('zh-CN')
 }
+
+// 组件销毁时清理弹窗
+onUnmounted(() => {
+  // 关闭所有可能打开的 ElMessageBox
+  try {
+    ElMessageBox.close()
+  } catch (error) {
+    // 忽略关闭错误
+  }
+})
 </script>
 
 <style scoped>
