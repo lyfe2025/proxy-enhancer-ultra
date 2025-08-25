@@ -1,44 +1,40 @@
 <template>
-  <div id="app">
+  <div id="app" :class="{ 'dark': themeStore.isDark }">
     <router-view />
   </div>
 </template>
 
 <script setup lang="ts">
 import { onMounted } from 'vue'
-import { useAuthStore } from './store/auth'
+import { useThemeStore } from '@/stores/theme'
 
-const authStore = useAuthStore()
+const themeStore = useThemeStore()
 
+// 初始化主题
 onMounted(() => {
-  // 应用启动时检查登录状态
-  authStore.checkAuth()
+  themeStore.loadSettings()
+  themeStore.applyTheme()
 })
 </script>
 
 <style>
 #app {
-  min-height: 100vh;
-  background-color: var(--el-bg-color);
-  color: var(--el-text-color-primary);
-}
-
-/* 全局滚动条样式 */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-track {
+  width: 100%;
+  height: 100vh;
+  font-family: 'Helvetica Neue', Helvetica, 'PingFang SC', 'Hiragino Sans GB', 'Microsoft YaHei', '微软雅黑', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
   background: var(--el-bg-color-page);
+  color: var(--el-text-color-primary);
+  transition: all 0.3s ease;
 }
 
-::-webkit-scrollbar-thumb {
-  background: var(--el-border-color-darker);
-  border-radius: 4px;
+* {
+  box-sizing: border-box;
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: var(--el-border-color-dark);
+body {
+  margin: 0;
+  padding: 0;
 }
 </style>

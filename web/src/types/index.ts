@@ -1,3 +1,12 @@
+// 导出拆分后的类型模块
+export * from './user'
+export * from './config'
+export * from './monitoring'
+export * from './logging'
+export * from './common'
+export * from './ui'
+export * from './business'
+
 // 基础类型定义
 export interface BaseModel {
   id: number
@@ -143,16 +152,10 @@ export interface ProxyLog extends BaseModel {
   error_message?: string
 }
 
-// API响应类型
-export interface ApiResponse<T = any> {
-  success: boolean
-  data?: T
-  message?: string
-  error?: string
-}
+
 
 export interface PaginatedResponse<T> {
-  data: T[]
+  items: T[]
   total: number
   page: number
   page_size: number

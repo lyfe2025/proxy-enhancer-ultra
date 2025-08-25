@@ -8,6 +8,7 @@ import (
 	"proxy-enhancer-ultra/internal/services"
 	"proxy-enhancer-ultra/pkg/logger"
 
+	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 )
 
@@ -34,7 +35,7 @@ func (h *RuleHandler) CreateRule(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// 基本验证
-	if req.ProxyConfigID == 0 {
+	if req.ProxyConfigID == uuid.Nil {
 		h.respondWithError(w, http.StatusBadRequest, "Proxy config ID is required")
 		return
 	}
@@ -74,16 +75,16 @@ func (h *RuleHandler) CreateRule(w http.ResponseWriter, r *http.Request) {
 // GetRule 获取规则
 func (h *RuleHandler) GetRule(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.ParseUint(vars["id"], 10, 32)
+	ruleID, err := uuid.Parse(vars["id"])
 	if err != nil {
-		h.respondWithError(w, http.StatusBadRequest, "Invalid rule ID")
+		h.respondWithError(w, http.StatusBadRequest, "Invalid rule ID format")
 		return
 	}
 
-	rule, err := h.ruleService.GetRule(uint(id))
+	rule, err := h.ruleService.GetRule(ruleID)
 	if err != nil {
 		h.logger.WithFields(map[string]interface{}{
-			"rule_id": id,
+			"rule_id": ruleID,
 			"error":   err.Error(),
 		}).Error("Failed to get rule")
 		h.respondWithError(w, http.StatusNotFound, err.Error())
@@ -98,9 +99,9 @@ func (h *RuleHandler) GetRule(w http.ResponseWriter, r *http.Request) {
 // UpdateRule 更新规则
 func (h *RuleHandler) UpdateRule(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.ParseUint(vars["id"], 10, 32)
+	ruleID, err := uuid.Parse(vars["id"])
 	if err != nil {
-		h.respondWithError(w, http.StatusBadRequest, "Invalid rule ID")
+		h.respondWithError(w, http.StatusBadRequest, "Invalid rule ID format")
 		return
 	}
 
@@ -110,9 +111,9 @@ func (h *RuleHandler) UpdateRule(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.ruleService.UpdateRule(uint(id), &req); err != nil {
+	if err := h.ruleService.UpdateRule(ruleID, &req); err != nil {
 		h.logger.WithFields(map[string]interface{}{
-			"rule_id": id,
+			"rule_id": ruleID,
 			"error":   err.Error(),
 		}).Error("Failed to update rule")
 		h.respondWithError(w, http.StatusBadRequest, err.Error())
@@ -127,15 +128,15 @@ func (h *RuleHandler) UpdateRule(w http.ResponseWriter, r *http.Request) {
 // DeleteRule 删除规则
 func (h *RuleHandler) DeleteRule(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.ParseUint(vars["id"], 10, 32)
+	ruleID, err := uuid.Parse(vars["id"])
 	if err != nil {
-		h.respondWithError(w, http.StatusBadRequest, "Invalid rule ID")
+		h.respondWithError(w, http.StatusBadRequest, "Invalid rule ID format")
 		return
 	}
 
-	if err := h.ruleService.DeleteRule(uint(id)); err != nil {
+	if err := h.ruleService.DeleteRule(ruleID); err != nil {
 		h.logger.WithFields(map[string]interface{}{
-			"rule_id": id,
+			"rule_id": ruleID,
 			"error":   err.Error(),
 		}).Error("Failed to delete rule")
 		h.respondWithError(w, http.StatusNotFound, err.Error())
@@ -152,14 +153,12 @@ func (h *RuleHandler) ListRules(w http.ResponseWriter, r *http.Request) {
 	// 解析查询参数
 	pageStr := r.URL.Query().Get("page")
 	pageSizeStr := r.URL.Query().Get("page_size")
-	proxyConfigIDStr := r.URL.Query().Get("proxy_config_id")
 	ruleType := r.URL.Query().Get("rule_type")
 	enabledStr := r.URL.Query().Get("enabled")
 
 	// 设置默认值
 	page := 1
 	pageSize := 10
-	var proxyConfigID *uint
 	var enabled *bool
 
 	// 解析页码
@@ -176,14 +175,6 @@ func (h *RuleHandler) ListRules(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// 解析代理配置ID
-	if proxyConfigIDStr != "" {
-		if pcid, err := strconv.ParseUint(proxyConfigIDStr, 10, 32); err == nil {
-			id := uint(pcid)
-			proxyConfigID = &id
-		}
-	}
-
 	// 解析启用状态
 	if enabledStr != "" {
 		if e, err := strconv.ParseBool(enabledStr); err == nil {
@@ -191,7 +182,7 @@ func (h *RuleHandler) ListRules(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	rules, total, err := h.ruleService.ListRules(page, pageSize, proxyConfigID, ruleType, enabled)
+	rules, total, err := h.ruleService.ListRules(page, pageSize, ruleType, enabled)
 	if err != nil {
 		h.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
@@ -217,15 +208,15 @@ func (h *RuleHandler) ListRules(w http.ResponseWriter, r *http.Request) {
 // ToggleRuleStatus 切换规则状态
 func (h *RuleHandler) ToggleRuleStatus(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	id, err := strconv.ParseUint(vars["id"], 10, 32)
+	ruleID, err := uuid.Parse(vars["id"])
 	if err != nil {
-		h.respondWithError(w, http.StatusBadRequest, "Invalid rule ID")
+		h.respondWithError(w, http.StatusBadRequest, "Invalid rule ID format")
 		return
 	}
 
-	if err := h.ruleService.ToggleRuleStatus(uint(id)); err != nil {
+	if err := h.ruleService.ToggleRuleStatus(ruleID); err != nil {
 		h.logger.WithFields(map[string]interface{}{
-			"rule_id": id,
+			"rule_id": ruleID,
 			"error":   err.Error(),
 		}).Error("Failed to toggle rule status")
 		h.respondWithError(w, http.StatusBadRequest, err.Error())
@@ -240,13 +231,13 @@ func (h *RuleHandler) ToggleRuleStatus(w http.ResponseWriter, r *http.Request) {
 // GetRulesByProxyConfig 根据代理配置获取规则
 func (h *RuleHandler) GetRulesByProxyConfig(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	proxyConfigID, err := strconv.ParseUint(vars["proxy_config_id"], 10, 32)
+	proxyConfigID, err := uuid.Parse(vars["proxy_config_id"])
 	if err != nil {
-		h.respondWithError(w, http.StatusBadRequest, "Invalid proxy config ID")
+		h.respondWithError(w, http.StatusBadRequest, "Invalid proxy config ID format")
 		return
 	}
 
-	rules, err := h.ruleService.GetRulesByProxyConfig(uint(proxyConfigID))
+	rules, err := h.ruleService.GetRulesByProxyConfig(proxyConfigID)
 	if err != nil {
 		h.logger.WithFields(map[string]interface{}{
 			"proxy_config_id": proxyConfigID,
@@ -265,8 +256,8 @@ func (h *RuleHandler) GetRulesByProxyConfig(w http.ResponseWriter, r *http.Reque
 func (h *RuleHandler) UpdateRulePriorities(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Updates []struct {
-			ID       uint `json:"id"`
-			Priority int  `json:"priority"`
+			ID       string `json:"id"`
+			Priority int    `json:"priority"`
 		} `json:"updates"`
 	}
 
@@ -280,15 +271,21 @@ func (h *RuleHandler) UpdateRulePriorities(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	// 验证更新数据
+	// 转换为服务层需要的类型
+	var updates []services.RulePriorityUpdate
 	for _, update := range req.Updates {
-		if update.ID == 0 {
-			h.respondWithError(w, http.StatusBadRequest, "Invalid rule ID in updates")
+		ruleID, err := uuid.Parse(update.ID)
+		if err != nil {
+			h.respondWithError(w, http.StatusBadRequest, "Invalid rule ID format in updates")
 			return
 		}
+		updates = append(updates, services.RulePriorityUpdate{
+			ID:       ruleID,
+			Priority: update.Priority,
+		})
 	}
 
-	if err := h.ruleService.UpdateRulePriorities(req.Updates); err != nil {
+	if err := h.ruleService.UpdateRulePriorities(updates); err != nil {
 		h.logger.WithFields(map[string]interface{}{
 			"error": err.Error(),
 		}).Error("Failed to update rule priorities")

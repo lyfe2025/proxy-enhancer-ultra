@@ -1,5 +1,4 @@
 import dayjs from 'dayjs'
-import type { FormRule } from '@/types'
 
 // 格式化日期时间
 export const formatDateTime = (date: string | Date, format = 'YYYY-MM-DD HH:mm:ss') => {
@@ -74,7 +73,7 @@ export const debounce = <T extends (...args: any[]) => any>(
   func: T,
   wait: number
 ): ((...args: Parameters<T>) => void) => {
-  let timeout: NodeJS.Timeout | null = null
+  let timeout: number | null = null
   
   return (...args: Parameters<T>) => {
     if (timeout) clearTimeout(timeout)
@@ -103,4 +102,7 @@ export const generateRandomString = (length = 8) => {
   const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
   let result = ''
   for (let i = 0; i < length; i++) {
-    result += chars.charAt(Math.floor
+    result += chars.charAt(Math.floor(Math.random() * chars.length))
+  }
+  return result
+}

@@ -127,7 +127,7 @@ func (s *MonitoringService) CollectProxyMetrics() (*ProxyMetrics, error) {
 	}
 
 	// 获取独立访客数（基于IP地址）
-	if err := s.db.Model(&models.ProxyLog{}).Distinct("client_ip").Count(&metrics.UniqueVisitors).Error; err != nil {
+	if err := s.db.Model(&models.ProxyLog{}).Distinct("user_ip").Count(&metrics.UniqueVisitors).Error; err != nil {
 		return nil, err
 	}
 
@@ -257,7 +257,7 @@ func (s *MonitoringService) GetProxyStats(proxyConfigID uint) (map[string]interf
 
 	// 获取独立访客数
 	var uniqueVisitors int64
-	if err := s.db.Model(&models.ProxyLog{}).Where("proxy_config_id = ?", proxyConfigID).Distinct("client_ip").Count(&uniqueVisitors).Error; err != nil {
+	if err := s.db.Model(&models.ProxyLog{}).Where("proxy_config_id = ?", proxyConfigID).Distinct("user_ip").Count(&uniqueVisitors).Error; err != nil {
 		return nil, err
 	}
 	stats["unique_visitors"] = uniqueVisitors

@@ -273,7 +273,7 @@ func (s *ProxyService) GetProxyStats(configID uint, startTime, endTime time.Time
 	stats.AvgResponseTime = int(avgResponseTime)
 
 	// 独立访客数（基于IP）
-	if err := query.Distinct("client_ip").Count(&stats.UniqueVisitors).Error; err != nil {
+	if err := query.Distinct("user_ip").Count(&stats.UniqueVisitors).Error; err != nil {
 		return nil, err
 	}
 

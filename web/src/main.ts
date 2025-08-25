@@ -9,6 +9,8 @@ import 'nprogress/nprogress.css'
 import App from './App.vue'
 import router from './router'
 import './styles/index.css'
+import './styles/theme.css'
+import './styles/element-dark.css'
 
 const app = createApp(App)
 

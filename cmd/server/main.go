@@ -43,7 +43,7 @@ func main() {
 	// 数据库连接（允许失败，以便先测试代理功能）
 	var db *database.Database
 	var dbConnected bool
-	
+
 	db, err = database.NewDatabase(cfg, loggerInstance)
 	if err != nil {
 		loggerInstance.WithFields(map[string]interface{}{
@@ -53,7 +53,7 @@ func main() {
 	} else {
 		dbConnected = true
 		defer db.Close()
-		
+
 		// 执行数据库迁移
 		if err := db.AutoMigrate(
 			&models.User{},
@@ -87,7 +87,7 @@ func main() {
 	var submissionService *services.SubmissionService
 	var monitoringService *services.MonitoringService
 	var proxyServer *proxy.ProxyServer
-	
+
 	if dbConnected && db != nil {
 		userService = services.NewUserService(db.DB, jwtManager, loggerInstance)
 		proxyService = services.NewProxyService(db.DB, loggerInstance)
@@ -109,7 +109,7 @@ func main() {
 	var popupHandler *handlers.PopupHandler
 	var submissionHandler *handlers.SubmissionHandler
 	var monitoringHandler *handlers.MonitoringHandler
-	
+
 	if dbConnected && db != nil {
 		authHandler = handlers.NewAuthHandler(userService, loggerInstance)
 		proxyHandler = handlers.NewProxyHandler(proxyService, loggerInstance)
@@ -117,7 +117,7 @@ func main() {
 		popupHandler = handlers.NewPopupHandler(popupService, loggerInstance)
 		submissionHandler = handlers.NewSubmissionHandler(submissionService, loggerInstance)
 		monitoringHandler = handlers.NewMonitoringHandler(monitoringService, loggerInstance)
-		
+
 		// 启动监控服务
 		if cfg.Monitoring.MetricsEnabled {
 			go monitoringService.StartMetricsCollection(5 * time.Minute)

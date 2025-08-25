@@ -1,141 +1,46 @@
 <template>
   <div class="admin-layout">
     <!-- 侧边栏 -->
-    <el-aside :width="sidebarWidth" class="sidebar">
-      <div class="sidebar-header">
-        <div class="logo">
-          <span class="logo-icon">🚀</span>
-          <span v-show="!appStore.sidebarCollapsed" class="logo-text">代理增强器</span>
-        </div>
-      </div>
-      
-      <el-scrollbar class="sidebar-menu">
-        <el-menu
-          :default-active="activeMenu"
-          :collapse="appStore.sidebarCollapsed"
-          :unique-opened="true"
-          router
-          class="menu"
-        >
-          <template v-for="item in menuItems" :key="item.path">
-            <el-menu-item
-              v-if="!item.children"
-              :index="item.path"
-              :disabled="!hasPermission(item.permissions)"
-            >
-              <el-icon><component :is="item.icon" /></el-icon>
-              <template #title>{{ item.title }}</template>
-            </el-menu-item>
-            
-            <el-sub-menu
-              v-else
-              :index="item.path"
-              :disabled="!hasPermission(item.permissions)"
-            >
-              <template #title>
-                <el-icon><component :is="item.icon" /></el-icon>
-                <span>{{ item.title }}</span>
-              </template>
-              
-              <el-menu-item
-                v-for="child in item.children"
-                :key="child.path"
-                :index="child.path"
-                :disabled="!hasPermission(child.permissions)"
-              >
-                <el-icon><component :is="child.icon" /></el-icon>
-                <template #title>{{ child.title }}</template>
-              </el-menu-item>
-            </el-sub-menu>
-          </template>
-        </el-menu>
-      </el-scrollbar>
-    </el-aside>
-    
-    <!-- 主内容区 -->
+    <AdminSidebar
+      :sidebar-collapsed="themeStore.sidebarCollapsed"
+      :menu-routes="menuRoutes"
+      @toggle-sidebar="toggleSidebar"
+    />
+
+    <!-- 主内容区域 -->
     <el-container class="main-container">
-      <!-- 顶部导航 -->
-      <el-header class="header">
-        <div class="header-left">
-          <el-button
-            type="text"
-            class="collapse-btn"
-            @click="toggleSidebar"
-          >
-            <el-icon><Expand v-if="appStore.sidebarCollapsed" /><Fold v-else /></el-icon>
-          </el-button>
-          
-          <el-breadcrumb class="breadcrumb" separator="/">
-            <el-breadcrumb-item
-              v-for="item in appStore.breadcrumbs"
-              :key="item.path"
-              :to="item.path"
-            >
-              {{ item.title }}
-            </el-breadcrumb-item>
-          </el-breadcrumb>
-        </div>
-        
-        <div class="header-right">
-          <!-- 主题切换 -->
-          <el-tooltip content="切换主题" placement="bottom">
-            <el-button
-              type="text"
-              class="theme-btn"
-              @click="toggleTheme"
-            >
-              <el-icon><Sunny v-if="appStore.theme === 'dark'" /><Moon v-else /></el-icon>
-            </el-button>
-          </el-tooltip>
-          
-          <!-- 全屏切换 -->
-          <el-tooltip content="全屏" placement="bottom">
-            <el-button
-              type="text"
-              class="fullscreen-btn"
-              @click="toggleFullscreen"
-            >
-              <el-icon><FullScreen /></el-icon>
-            </el-button>
-          </el-tooltip>
-          
-          <!-- 用户菜单 -->
-          <el-dropdown class="user-dropdown" @command="handleUserCommand">
-            <div class="user-info">
-              <el-avatar :size="32" class="user-avatar">
-                {{ authStore.user?.username?.charAt(0).toUpperCase() }}
-              </el-avatar>
-              <span v-show="!appStore.isMobile" class="username">
-                {{ authStore.user?.username }}
-              </span>
-              <el-icon class="dropdown-icon"><ArrowDown /></el-icon>
-            </div>
-            
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item command="profile">
-                  <el-icon><User /></el-icon>
-                  个人资料
-                </el-dropdown-item>
-                <el-dropdown-item command="settings">
-                  <el-icon><Setting /></el-icon>
-                  账户设置
-                </el-dropdown-item>
-                <el-dropdown-item divided command="logout">
-                  <el-icon><SwitchButton /></el-icon>
-                  退出登录
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </div>
-      </el-header>
-      
-      <!-- 主内容 -->
+      <!-- 顶部导航栏 -->
+      <AdminHeader
+        :breadcrumb-list="breadcrumbList"
+        :notifications="notifications"
+        :user-info="userInfo"
+        :is-fullscreen="isFullscreen"
+        :is-dark="themeStore.isDark"
+        @toggle-fullscreen="toggleFullscreen"
+        @toggle-theme="toggleTheme"
+        @mark-as-read="markNotificationAsRead"
+        @mark-all-as-read="markAllNotificationsAsRead"
+        @logout="handleLogout"
+      />
+
+      <!-- 标签页 -->
+      <AdminTabs
+        :visited-views="visitedViews"
+        :cached-views="cachedViews"
+        @add-view="addVisitedView"
+        @delete-view="deleteVisitedView"
+        @delete-other-views="deleteOtherViews"
+        @delete-all-views="deleteAllViews"
+        @refresh-view="refreshView"
+      />
+
+      <!-- 主要内容区域 -->
       <el-main class="main-content">
-        <router-view v-slot="{ Component }">
+        <router-view v-slot="{ Component, route }">
           <transition name="fade-transform" mode="out-in">
-            <component :is="Component" />
+            <keep-alive :include="cachedViews">
+              <component :is="Component" :key="route.path" />
+            </keep-alive>
           </transition>
         </router-view>
       </el-main>
@@ -144,400 +49,223 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import {
-  Dashboard,
-  Connection,
-  Setting,
-  DataAnalysis,
-  Tools,
-  User,
-  Expand,
-  Fold,
-  Sunny,
-  Moon,
-  FullScreen,
-  ArrowDown,
-  SwitchButton
-} from '@element-plus/icons-vue'
-import { useAuthStore } from '@/store/auth'
-import { useAppStore } from '@/store/app'
-import type { MenuItem } from '@/types'
+import { ElMessage } from 'element-plus'
+import { useAuthStore } from '@/stores/auth'
+import { useThemeStore } from '@/stores/theme'
+import { menuRoutes } from '@/router'
+
+// 导入子组件
+import AdminSidebar from './components/AdminSidebar.vue'
+import AdminHeader from './components/AdminHeader.vue'
+import AdminTabs from './components/AdminTabs.vue'
 
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const appStore = useAppStore()
+const themeStore = useThemeStore()
 
-// 计算属性
-const sidebarWidth = computed(() => {
-  return appStore.sidebarCollapsed ? '64px' : '240px'
-})
+// 全屏状态
+const isFullscreen = ref(false)
 
-const activeMenu = computed(() => {
-  return route.path
-})
+// 用户信息
+const userInfo = computed(() => ({
+  username: authStore.userInfo?.username || '用户',
+  avatar: authStore.userInfo?.avatar
+}))
 
-// 菜单项配置
-const menuItems: MenuItem[] = [
+// 通知数据
+const notifications = ref([
   {
-    path: '/dashboard',
-    title: '仪表盘',
-    icon: 'Dashboard',
-    permissions: []
+    id: '1',
+    title: '系统更新',
+    content: '系统已更新到最新版本 v2.1.0',
+    type: 'info' as const,
+    read: false,
+    createdAt: new Date().toISOString()
   },
   {
-    path: '/proxy',
-    title: '代理管理',
-    icon: 'Connection',
-    permissions: ['proxy:read']
-  },
-  {
-    path: '/rules',
-    title: '规则配置',
-    icon: 'Setting',
-    permissions: ['rule:read']
-  },
-  {
-    path: '/data-collection',
-    title: '数据收集',
-    icon: 'DataAnalysis',
-    permissions: ['popup:read'],
-    children: [
-      {
-        path: '/data-collection',
-        title: '弹窗管理',
-        icon: 'DataAnalysis',
-        permissions: ['popup:read']
-      },
-      {
-        path: '/data-collection/submissions',
-        title: '提交数据',
-        icon: 'DataAnalysis',
-        permissions: ['submission:read']
-      }
-    ]
-  },
-  {
-    path: '/system',
-    title: '系统设置',
-    icon: 'Tools',
-    permissions: ['system:read'],
-    children: [
-      {
-        path: '/system/users',
-        title: '用户管理',
-        icon: 'User',
-        permissions: ['user:read']
-      },
-      {
-        path: '/system/roles',
-        title: '角色管理',
-        icon: 'Setting',
-        permissions: ['role:read']
-      },
-      {
-        path: '/system/permissions',
-        title: '权限管理',
-        icon: 'Setting',
-        permissions: ['permission:read']
-      },
-      {
-        path: '/system/logs',
-        title: '系统日志',
-        icon: 'DataAnalysis',
-        permissions: ['log:read']
-      }
-    ]
+    id: '2',
+    title: '代理异常',
+    content: '代理服务器 proxy-01 连接异常，请及时处理',
+    type: 'warning' as const,
+    read: false,
+    createdAt: new Date(Date.now() - 1000 * 60 * 30).toISOString()
   }
-]
+])
 
-// 权限检查
-const hasPermission = (permissions?: string[]) => {
-  if (!permissions || permissions.length === 0) return true
-  return permissions.some(permission => authStore.hasPermission(permission))
+// 标签页相关
+const visitedViews = ref<any[]>([])
+const cachedViews = ref<string[]>([])
+
+// 面包屑导航
+const breadcrumbList = computed(() => {
+  const matched = route.matched.filter(item => item.meta && item.meta.title)
+  const first = matched[0]
+
+  if (!first || (first.name !== 'Dashboard' && first.path !== '/')) {
+    matched.unshift({ path: '/', meta: { title: '首页', icon: 'House' } } as any)
+  }
+
+  return matched.map(item => ({
+    path: item.path,
+    title: item.meta?.title || '',
+    icon: item.meta?.icon
+  }))
+})
+
+onMounted(() => {
+  initTags()
+  addVisitedView(route as any)
+})
+
+// 监听路由变化
+watch(route, (newRoute) => {
+  addVisitedView(newRoute as any)
+})
+
+// 初始化固定标签
+const initTags = () => {
+  const affixTags = [
+    { path: '/', meta: { title: '首页', affix: true, icon: 'House' } }
+  ]
+  for (const tag of affixTags) {
+    if (tag.meta?.affix) {
+      addVisitedView(tag as any)
+    }
+  }
 }
 
-// 切换侧边栏
+// 标签页管理方法
+const addVisitedView = (view: any) => {
+  if (visitedViews.value.some(v => v.path === view.path)) return
+  
+  visitedViews.value.push({
+    name: view.name,
+    path: view.path,
+    fullPath: view.fullPath,
+    meta: view.meta,
+    query: view.query,
+    params: view.params
+  })
+
+  if (view.name && !view.meta?.noCache) {
+    cachedViews.value.push(view.name)
+  }
+}
+
+const deleteVisitedView = (view: any) => {
+  const index = visitedViews.value.findIndex(v => v.path === view.path)
+  if (index > -1) {
+    visitedViews.value.splice(index, 1)
+  }
+  
+  if (view.name) {
+    const cacheIndex = cachedViews.value.indexOf(view.name)
+    if (cacheIndex > -1) {
+      cachedViews.value.splice(cacheIndex, 1)
+    }
+  }
+}
+
+const deleteOtherViews = (view: any) => {
+  visitedViews.value = visitedViews.value.filter(v => v.meta?.affix || v.path === view.path)
+  cachedViews.value = cachedViews.value.filter(name => {
+    const tab = visitedViews.value.find(v => v.name === name)
+    return tab?.meta?.affix || tab?.path === view.path
+  })
+}
+
+const deleteAllViews = () => {
+  visitedViews.value = visitedViews.value.filter(v => v.meta?.affix)
+  cachedViews.value = cachedViews.value.filter(name => {
+    const tab = visitedViews.value.find(v => v.name === name)
+    return tab?.meta?.affix
+  })
+}
+
+const refreshView = (view: any) => {
+  if (view.name) {
+    const index = cachedViews.value.indexOf(view.name)
+    if (index > -1) {
+      cachedViews.value.splice(index, 1)
+      setTimeout(() => {
+        cachedViews.value.push(view.name)
+      }, 100)
+    }
+  }
+}
+
+// 侧边栏切换
 const toggleSidebar = () => {
-  appStore.toggleSidebar()
-}
-
-// 切换主题
-const toggleTheme = () => {
-  appStore.setTheme(appStore.theme === 'dark' ? 'light' : 'dark')
+  themeStore.toggleSidebar()
 }
 
 // 全屏切换
 const toggleFullscreen = () => {
   if (!document.fullscreenElement) {
     document.documentElement.requestFullscreen()
+    isFullscreen.value = true
   } else {
     document.exitFullscreen()
+    isFullscreen.value = false
   }
 }
 
-// 处理用户菜单命令
-const handleUserCommand = async (command: string) => {
-  switch (command) {
-    case 'profile':
-      // 跳转到个人资料页面
-      ElMessage.info('个人资料功能开发中')
-      break
-    case 'settings':
-      // 跳转到账户设置页面
-      ElMessage.info('账户设置功能开发中')
-      break
-    case 'logout':
-      try {
-        await ElMessageBox.confirm(
-          '确定要退出登录吗？',
-          '提示',
-          {
-            confirmButtonText: '确定',
-            cancelButtonText: '取消',
-            type: 'warning'
-          }
-        )
-        
-        await authStore.logout()
-        ElMessage.success('已退出登录')
-        router.push('/login')
-      } catch {
-        // 用户取消
-      }
-      break
+// 主题切换
+const toggleTheme = () => {
+  themeStore.toggleDark()
+}
+
+// 通知管理
+const markNotificationAsRead = (id: string) => {
+  const notification = notifications.value.find(n => n.id === id)
+  if (notification) {
+    notification.read = true
   }
 }
 
-// 更新面包屑
-const updateBreadcrumbs = () => {
-  const breadcrumbs = []
-  const matched = route.matched.filter(item => item.meta && item.meta.title)
-  
-  for (const item of matched) {
-    breadcrumbs.push({
-      path: item.path,
-      title: item.meta.title as string
-    })
-  }
-  
-  appStore.setBreadcrumbs(breadcrumbs)
+const markAllNotificationsAsRead = () => {
+  notifications.value.forEach(notification => {
+    notification.read = true
+  })
 }
 
-// 监听路由变化
-watch(
-  () => route.path,
-  () => {
-    updateBreadcrumbs()
-  },
-  { immediate: true }
-)
-
-// 组件挂载
-onMounted(() => {
-  // 初始化应用状态
-  appStore.initApp()
-  
-  // 检测设备类型
-  appStore.detectDevice()
-  
-  // 监听窗口大小变化
-  window.addEventListener('resize', appStore.detectDevice)
-})
+// 退出登录
+const handleLogout = async () => {
+  try {
+    await authStore.logout()
+    router.push('/login')
+    ElMessage.success('已退出登录')
+  } catch (error) {
+    console.error('退出登录失败:', error)
+    ElMessage.error('退出登录失败')
+  }
+}
 </script>
 
 <style scoped>
 .admin-layout {
   height: 100vh;
   display: flex;
-  background-color: #0a0a0a;
+  background: var(--el-bg-color-page);
 }
 
-/* 侧边栏 */
-.sidebar {
-  background-color: #1a1a1a;
-  border-right: 1px solid #333;
-  transition: width 0.3s ease;
-  overflow: hidden;
-}
-
-.sidebar-header {
-  height: 60px;
-  display: flex;
-  align-items: center;
-  padding: 0 20px;
-  border-bottom: 1px solid #333;
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  color: #00ff88;
-  font-weight: 600;
-  font-size: 18px;
-}
-
-.logo-icon {
-  font-size: 24px;
-}
-
-.logo-text {
-  white-space: nowrap;
-  transition: opacity 0.3s ease;
-}
-
-.sidebar-menu {
-  height: calc(100vh - 60px);
-}
-
-.menu {
-  border: none;
-  background-color: transparent;
-}
-
-.menu :deep(.el-menu-item) {
-  color: #ccc;
-  border-radius: 8px;
-  margin: 4px 12px;
-  height: 48px;
-  line-height: 48px;
-}
-
-.menu :deep(.el-menu-item:hover) {
-  background-color: rgba(0, 255, 136, 0.1);
-  color: #00ff88;
-}
-
-.menu :deep(.el-menu-item.is-active) {
-  background-color: rgba(0, 255, 136, 0.2);
-  color: #00ff88;
-  border-right: none;
-}
-
-.menu :deep(.el-sub-menu__title) {
-  color: #ccc;
-  border-radius: 8px;
-  margin: 4px 12px;
-  height: 48px;
-  line-height: 48px;
-}
-
-.menu :deep(.el-sub-menu__title:hover) {
-  background-color: rgba(0, 255, 136, 0.1);
-  color: #00ff88;
-}
-
-.menu :deep(.el-sub-menu.is-active .el-sub-menu__title) {
-  color: #00ff88;
-}
-
-/* 主容器 */
 .main-container {
   flex: 1;
   display: flex;
   flex-direction: column;
 }
 
-/* 顶部导航 */
-.header {
-  background-color: #1a1a1a;
-  border-bottom: 1px solid #333;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0 20px;
-  height: 60px;
-}
-
-.header-left {
-  display: flex;
-  align-items: center;
-  gap: 20px;
-}
-
-.collapse-btn {
-  color: #ccc;
-  font-size: 18px;
-}
-
-.collapse-btn:hover {
-  color: #00ff88;
-}
-
-.breadcrumb {
-  color: #ccc;
-}
-
-.breadcrumb :deep(.el-breadcrumb__item) {
-  color: #ccc;
-}
-
-.breadcrumb :deep(.el-breadcrumb__item:last-child .el-breadcrumb__inner) {
-  color: #00ff88;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-}
-
-.theme-btn,
-.fullscreen-btn {
-  color: #ccc;
-  font-size: 18px;
-}
-
-.theme-btn:hover,
-.fullscreen-btn:hover {
-  color: #00ff88;
-}
-
-.user-dropdown {
-  cursor: pointer;
-}
-
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  transition: background-color 0.3s ease;
-}
-
-.user-info:hover {
-  background-color: rgba(0, 255, 136, 0.1);
-}
-
-.user-avatar {
-  background-color: #00ff88;
-  color: #000;
-  font-weight: 600;
-}
-
-.username {
-  color: #ccc;
-  font-size: 14px;
-}
-
-.dropdown-icon {
-  color: #ccc;
-  font-size: 12px;
-}
-
-/* 主内容 */
 .main-content {
-  background-color: #0a0a0a;
-  padding: 20px;
-  overflow-y: auto;
+  flex: 1;
+  padding: 24px;
+  overflow: auto;
+  background: var(--el-bg-color-page);
 }
 
-/* 过渡动画 */
+/* 页面切换动画 */
 .fade-transform-enter-active,
 .fade-transform-leave-active {
   transition: all 0.3s ease;
@@ -553,50 +281,15 @@ onMounted(() => {
   transform: translateX(-30px);
 }
 
+/* 深色主题适配 */
+.dark .admin-layout {
+  background: var(--el-bg-color-page);
+}
+
 /* 响应式设计 */
 @media (max-width: 768px) {
-  .sidebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    z-index: 1000;
-    height: 100vh;
+  .main-content {
+    padding: 16px;
   }
-  
-  .main-container {
-    margin-left: 0;
-  }
-  
-  .header-left .breadcrumb {
-    display: none;
-  }
-  
-  .username {
-    display: none;
-  }
-}
-
-/* 深色主题样式 */
-:deep(.el-dropdown-menu) {
-  background-color: #1a1a1a;
-  border: 1px solid #333;
-}
-
-:deep(.el-dropdown-menu__item) {
-  color: #ccc;
-}
-
-:deep(.el-dropdown-menu__item:hover) {
-  background-color: rgba(0, 255, 136, 0.1);
-  color: #00ff88;
-}
-
-:deep(.el-button--text) {
-  background-color: transparent;
-  border: none;
-}
-
-:deep(.el-breadcrumb__separator) {
-  color: #666;
 }
 </style>

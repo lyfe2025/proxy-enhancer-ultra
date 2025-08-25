@@ -1,17 +1,38 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
-import { useAuthStore } from '@/store/auth'
+import { useAuthStore } from '@/stores/auth'
+import { ElMessage } from 'element-plus'
+import {
+  Connection,
+  SetUp,
+  DataAnalysis,
+  Setting,
+  Odometer,
+  PieChart,
+  Monitor,
+  TrendCharts
+} from '@element-plus/icons-vue'
 
-// 路由配置
+// 导入页面组件
+import Login from '@/views/auth/Login.vue'
+import AdminLayout from '@/views/layout/AdminLayout.vue'
+import Dashboard from '@/views/dashboard/Dashboard.vue'
+import ProxyManagement from '@/views/proxy/ProxyManagement.vue'
+import RulesManagement from '@/views/rules/RulesManagement.vue'
+import DataCollection from '@/views/data/DataCollection.vue'
+import SystemSettings from '@/views/system/SystemSettings.vue'
+import NotFound from '@/views/error/NotFound.vue'
+
+// 定义路由
 const routes: RouteRecordRaw[] = [
   {
     path: '/login',
     name: 'Login',
-    component: () => import('@/views/auth/Login.vue'),
+    component: Login,
     meta: {
       title: '登录',
-      requiresAuth: false,
-      hideInMenu: true
+      requireAuth: false,
+      hidden: true
     }
   },
   {
@@ -21,185 +42,66 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/admin',
     name: 'Admin',
-    component: () => import('@/views/layout/AdminLayout.vue'),
+    component: AdminLayout,
+    redirect: '/dashboard',
     meta: {
       title: '管理后台',
-      requiresAuth: true
+      requireAuth: true
     },
     children: [
       {
         path: '/dashboard',
         name: 'Dashboard',
-        component: () => import('@/views/dashboard/Dashboard.vue'),
+        component: Dashboard,
         meta: {
           title: '仪表盘',
-          icon: 'Dashboard',
-          requiresAuth: true
+          icon: 'Odometer',
+          requireAuth: true,
+          affix: true
         }
       },
       {
         path: '/proxy',
         name: 'ProxyManagement',
-        component: () => import('@/views/proxy/ProxyManagement.vue'),
+        component: ProxyManagement,
         meta: {
           title: '代理管理',
           icon: 'Connection',
-          requiresAuth: true,
-          permissions: ['proxy:read']
-        }
-      },
-      {
-        path: '/proxy/create',
-        name: 'ProxyCreate',
-        component: () => import('@/views/proxy/ProxyForm.vue'),
-        meta: {
-          title: '创建代理',
-          hideInMenu: true,
-          requiresAuth: true,
-          permissions: ['proxy:create']
-        }
-      },
-      {
-        path: '/proxy/edit/:id',
-        name: 'ProxyEdit',
-        component: () => import('@/views/proxy/ProxyForm.vue'),
-        meta: {
-          title: '编辑代理',
-          hideInMenu: true,
-          requiresAuth: true,
-          permissions: ['proxy:update']
+          requireAuth: true,
+          permissions: ['proxy:view']
         }
       },
       {
         path: '/rules',
         name: 'RulesManagement',
-        component: () => import('@/views/rules/RulesManagement.vue'),
+        component: RulesManagement,
         meta: {
           title: '规则配置',
           icon: 'Setting',
-          requiresAuth: true,
-          permissions: ['rule:read']
+          requireAuth: true,
+          permissions: ['rules:view']
         }
       },
       {
-        path: '/rules/create',
-        name: 'RuleCreate',
-        component: () => import('@/views/rules/RuleForm.vue'),
-        meta: {
-          title: '创建规则',
-          hideInMenu: true,
-          requiresAuth: true,
-          permissions: ['rule:create']
-        }
-      },
-      {
-        path: '/rules/edit/:id',
-        name: 'RuleEdit',
-        component: () => import('@/views/rules/RuleForm.vue'),
-        meta: {
-          title: '编辑规则',
-          hideInMenu: true,
-          requiresAuth: true,
-          permissions: ['rule:update']
-        }
-      },
-      {
-        path: '/data-collection',
+        path: '/data',
         name: 'DataCollection',
-        component: () => import('@/views/data/DataCollection.vue'),
+        component: DataCollection,
         meta: {
           title: '数据收集',
           icon: 'DataAnalysis',
-          requiresAuth: true,
-          permissions: ['popup:read']
+          requireAuth: true,
+          permissions: ['data:view']
         }
       },
       {
-        path: '/data-collection/popup/create',
-        name: 'PopupCreate',
-        component: () => import('@/views/data/PopupForm.vue'),
-        meta: {
-          title: '创建弹窗',
-          hideInMenu: true,
-          requiresAuth: true,
-          permissions: ['popup:create']
-        }
-      },
-      {
-        path: '/data-collection/popup/edit/:id',
-        name: 'PopupEdit',
-        component: () => import('@/views/data/PopupForm.vue'),
-        meta: {
-          title: '编辑弹窗',
-          hideInMenu: true,
-          requiresAuth: true,
-          permissions: ['popup:update']
-        }
-      },
-      {
-        path: '/data-collection/submissions',
-        name: 'Submissions',
-        component: () => import('@/views/data/Submissions.vue'),
-        meta: {
-          title: '提交数据',
-          hideInMenu: true,
-          requiresAuth: true,
-          permissions: ['submission:read']
-        }
-      },
-      {
-        path: '/system',
+        path: '/settings',
         name: 'SystemSettings',
-        component: () => import('@/views/system/SystemSettings.vue'),
+        component: SystemSettings,
         meta: {
           title: '系统设置',
           icon: 'Tools',
-          requiresAuth: true,
-          permissions: ['system:read']
-        }
-      },
-      {
-        path: '/system/users',
-        name: 'UserManagement',
-        component: () => import('@/views/system/UserManagement.vue'),
-        meta: {
-          title: '用户管理',
-          hideInMenu: true,
-          requiresAuth: true,
-          permissions: ['user:read']
-        }
-      },
-      {
-        path: '/system/roles',
-        name: 'RoleManagement',
-        component: () => import('@/views/system/RoleManagement.vue'),
-        meta: {
-          title: '角色管理',
-          hideInMenu: true,
-          requiresAuth: true,
-          permissions: ['role:read']
-        }
-      },
-      {
-        path: '/system/permissions',
-        name: 'PermissionManagement',
-        component: () => import('@/views/system/PermissionManagement.vue'),
-        meta: {
-          title: '权限管理',
-          hideInMenu: true,
-          requiresAuth: true,
-          permissions: ['permission:read']
-        }
-      },
-      {
-        path: '/system/logs',
-        name: 'SystemLogs',
-        component: () => import('@/views/system/SystemLogs.vue'),
-        meta: {
-          title: '系统日志',
-          hideInMenu: true,
-          requiresAuth: true,
-          permissions: ['log:read']
+          requireAuth: true,
+          permissions: ['system:view']
         }
       }
     ]
@@ -207,15 +109,21 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/404',
     name: 'NotFound',
-    component: () => import('@/views/error/404.vue'),
+    component: NotFound,
     meta: {
       title: '页面不存在',
-      hideInMenu: true
+      hidden: true
     }
   },
+  // 404 页面
   {
     path: '/:pathMatch(.*)*',
-    redirect: '/404'
+    name: 'NotFoundCatch',
+    component: NotFound,
+    meta: {
+      title: '页面未找到',
+      requireAuth: false
+    }
   }
 ]
 
@@ -234,48 +142,68 @@ const router = createRouter({
 
 // 路由守卫
 router.beforeEach(async (to, from, next) => {
-  const authStore = useAuthStore()
-  
   // 设置页面标题
-  if (to.meta.title) {
+  if (to.meta?.title) {
     document.title = `${to.meta.title} - 代理增强器`
   }
+
+  const authStore = useAuthStore()
   
   // 检查是否需要认证
-  if (to.meta.requiresAuth) {
+  if (to.meta?.requireAuth) {
     // 检查是否已登录
     if (!authStore.isAuthenticated) {
-      // 尝试从本地存储恢复认证状态
-      await authStore.checkAuth()
-      
-      if (!authStore.isAuthenticated) {
-        next({
-          path: '/login',
-          query: { redirect: to.fullPath }
-        })
-        return
-      }
+      ElMessage.warning('请先登录')
+      next({
+        path: '/login',
+        query: { redirect: to.fullPath }
+      })
+      return
     }
-    
+
     // 检查权限
-    if (to.meta.permissions && Array.isArray(to.meta.permissions)) {
+    if (to.meta?.permissions && Array.isArray(to.meta.permissions)) {
       const hasPermission = to.meta.permissions.some(permission => 
         authStore.hasPermission(permission)
       )
       
       if (!hasPermission) {
-        // 权限不足，跳转到403页面或首页
+        ElMessage.error('您没有访问该页面的权限')
         next('/dashboard')
         return
       }
     }
-  } else if (to.path === '/login' && authStore.isAuthenticated) {
-    // 已登录用户访问登录页，重定向到首页
+
+    // 检查角色
+    if (to.meta?.roles && Array.isArray(to.meta.roles)) {
+      const hasRole = to.meta.roles.some(role => 
+        authStore.hasRole(role)
+      )
+      
+      if (!hasRole) {
+        ElMessage.error('您没有访问该页面的权限')
+        next('/dashboard')
+        return
+      }
+    }
+  }
+
+  // 如果已登录且访问登录页，重定向到仪表盘
+  if (to.path === '/login' && authStore.isAuthenticated) {
     next('/dashboard')
     return
   }
-  
+
   next()
 })
 
+// 路由错误处理
+router.onError((error) => {
+  console.error('路由错误:', error)
+  ElMessage.error('页面加载失败，请刷新重试')
+})
+
 export default router
+
+// 导出路由配置用于菜单生成
+export const menuRoutes = routes.find(route => route.path === '/admin')?.children || []
