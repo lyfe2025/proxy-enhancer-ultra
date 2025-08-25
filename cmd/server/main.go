@@ -104,6 +104,8 @@ func main() {
 
 	// 初始化处理器（根据数据库连接状态）
 	var authHandler *handlers.AuthHandler
+	var profileHandler *handlers.ProfileHandler
+	var userAdminHandler *handlers.UserAdminHandler
 	var proxyHandler *handlers.ProxyHandler
 	var ruleHandler *handlers.RuleHandler
 	var popupHandler *handlers.PopupHandler
@@ -112,6 +114,8 @@ func main() {
 
 	if dbConnected && db != nil {
 		authHandler = handlers.NewAuthHandler(userService, loggerInstance)
+		profileHandler = handlers.NewProfileHandler(userService, loggerInstance)
+		userAdminHandler = handlers.NewUserAdminHandler(userService, loggerInstance)
 		proxyHandler = handlers.NewProxyHandler(proxyService, loggerInstance)
 		ruleHandler = handlers.NewRuleHandler(ruleService, loggerInstance)
 		popupHandler = handlers.NewPopupHandler(popupService, loggerInstance)
@@ -135,25 +139,32 @@ func main() {
 		auth.HandleFunc("/register", authHandler.Register).Methods("POST")
 		auth.HandleFunc("/refresh", authHandler.RefreshToken).Methods("POST")
 
+		// 需要认证的auth路由
+		authProtected := auth.PathPrefix("").Subrouter()
+		authProtected.Use(middleware.AuthMiddleware(jwtManager))
+		authProtected.HandleFunc("/user-info", profileHandler.GetProfile).Methods("GET")
+		authProtected.HandleFunc("/user-info", profileHandler.UpdateProfile).Methods("PUT")
+		authProtected.HandleFunc("/logout", authHandler.Logout).Methods("POST")
+
 		// 受保护的API路由
 		api := router.PathPrefix("/api").Subrouter()
 		api.Use(middleware.AuthMiddleware(jwtManager))
 
 		// 用户相关路由
-		api.HandleFunc("/profile", authHandler.GetProfile).Methods("GET")
-		api.HandleFunc("/profile", authHandler.UpdateProfile).Methods("PUT")
-		api.HandleFunc("/change-password", authHandler.ChangePassword).Methods("POST")
+		api.HandleFunc("/profile", profileHandler.GetProfile).Methods("GET")
+		api.HandleFunc("/profile", profileHandler.UpdateProfile).Methods("PUT")
+		api.HandleFunc("/change-password", profileHandler.ChangePassword).Methods("POST")
 
 		// 管理后台API（需要管理员权限）
 		admin := api.PathPrefix("/admin").Subrouter()
 		admin.Use(middleware.AdminMiddleware)
 
 		// 用户管理
-		admin.HandleFunc("/users", authHandler.CreateUser).Methods("POST")
-		admin.HandleFunc("/users", authHandler.ListUsers).Methods("GET")
-		admin.HandleFunc("/users/{id}", authHandler.GetUser).Methods("GET")
-		admin.HandleFunc("/users/{id}", authHandler.UpdateUser).Methods("PUT")
-		admin.HandleFunc("/users/{id}", authHandler.DeleteUser).Methods("DELETE")
+		admin.HandleFunc("/users", userAdminHandler.CreateUser).Methods("POST")
+		admin.HandleFunc("/users", userAdminHandler.ListUsers).Methods("GET")
+		admin.HandleFunc("/users/{id}", userAdminHandler.GetUser).Methods("GET")
+		admin.HandleFunc("/users/{id}", userAdminHandler.UpdateUser).Methods("PUT")
+		admin.HandleFunc("/users/{id}", userAdminHandler.DeleteUser).Methods("DELETE")
 
 		// 代理配置管理
 		admin.HandleFunc("/proxies", proxyHandler.CreateProxyConfig).Methods("POST")

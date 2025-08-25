@@ -45,7 +45,13 @@
         <div class="tab-content">
           <RoleManagement 
             ref="roleManagementRef"
-            @refresh="handleRefresh"
+            :roles="rolesList"
+            :permissions="permissionsList"
+            :loading="rolesLoading"
+            @role-created="handleRoleCreated"
+            @role-updated="handleRoleUpdated"
+            @role-deleted="handleRoleDeleted"
+            @refresh-roles="handleRefresh"
           />
         </div>
       </el-tab-pane>
@@ -55,7 +61,12 @@
         <div class="tab-content">
           <SystemConfiguration 
             ref="systemConfigurationRef"
-            @refresh="handleRefresh"
+            :config="systemConfig"
+            :loading="configLoading"
+            @config-updated="handleConfigUpdated"
+            @config-reset="handleConfigReset"
+            @save-config="handleSaveConfig"
+            @test-email="handleTestEmail"
           />
         </div>
       </el-tab-pane>
@@ -85,9 +96,7 @@ import * as systemApi from '@/api/system'
 import type { Role } from '@/types/system'
 
 // 导入子组件
-import { UserManagement } from '@/components'
-import RoleManagement from './components/RoleManagement.vue'
-import SystemConfiguration from './components/SystemConfiguration.vue'
+import { UserManagement, RoleManagement, SystemConfiguration } from '@/components'
 import OperationLogs from './components/OperationLogs.vue'
 
 // 响应式数据
@@ -103,9 +112,13 @@ const operationLogsRef = ref()
 // 数据列表
 const usersList = ref<any[]>([])
 const rolesList = ref<Role[]>([])
+const permissionsList = ref<any[]>([])
+const systemConfig = ref<any>({})
 
 // 加载状态
 const usersLoading = ref(false)
+const rolesLoading = ref(false)
+const configLoading = ref(false)
 
 // 获取用户列表
 const fetchUsersList = async () => {
@@ -124,10 +137,39 @@ const fetchUsersList = async () => {
 // 获取角色列表
 const fetchRolesList = async () => {
   try {
+    rolesLoading.value = true
     const response = await systemApi.getRoleList({})
     rolesList.value = (response.data as any).data || []
   } catch (error) {
     console.error('获取角色列表失败:', error)
+    ElMessage.error('获取角色列表失败')
+  } finally {
+    rolesLoading.value = false
+  }
+}
+
+// 获取权限列表
+const fetchPermissionsList = async () => {
+  try {
+    const response = await systemApi.getPermissionList()
+    permissionsList.value = (response.data as any).data || []
+  } catch (error) {
+    console.error('获取权限列表失败:', error)
+    ElMessage.error('获取权限列表失败')
+  }
+}
+
+// 获取系统配置
+const fetchSystemConfig = async () => {
+  try {
+    configLoading.value = true
+    const response = await systemApi.getSystemConfigs()
+    systemConfig.value = response.data || {}
+  } catch (error) {
+    console.error('获取系统配置失败:', error)
+    ElMessage.error('获取系统配置失败')
+  } finally {
+    configLoading.value = false
   }
 }
 
@@ -203,17 +245,72 @@ const handleUserStatusToggled = (userId: string, status: boolean) => {
   ElMessage.success(`用户已${status ? '启用' : '禁用'}`)
 }
 
+// 角色管理事件处理
+const handleRoleCreated = (role: any) => {
+  rolesList.value.push(role)
+  ElMessage.success('角色创建成功')
+}
+
+const handleRoleUpdated = (updatedRole: any) => {
+  const index = rolesList.value.findIndex(r => r.id === updatedRole.id)
+  if (index !== -1) {
+    rolesList.value[index] = updatedRole
+  }
+  ElMessage.success('角色更新成功')
+}
+
+const handleRoleDeleted = (roleId: string) => {
+  rolesList.value = rolesList.value.filter(r => r.id !== roleId)
+  ElMessage.success('角色删除成功')
+}
+
+// 系统配置事件处理
+const handleConfigUpdated = (config: any) => {
+  systemConfig.value = config
+  ElMessage.success('系统配置更新成功')
+}
+
+const handleConfigReset = () => {
+  fetchSystemConfig()
+  ElMessage.info('系统配置已重置')
+}
+
+const handleSaveConfig = async (config: any) => {
+  try {
+    await systemApi.updateSystemConfig('all', JSON.stringify(config))
+    systemConfig.value = config
+    ElMessage.success('系统配置保存成功')
+  } catch (error) {
+    console.error('保存系统配置失败:', error)
+    ElMessage.error('保存系统配置失败')
+  }
+}
+
+const handleTestEmail = async (emailConfig: any) => {
+  try {
+    // TODO: 实现邮件测试API
+    ElMessage.info('邮件配置测试功能开发中')
+  } catch (error) {
+    console.error('邮件测试失败:', error)
+    ElMessage.error('邮件测试失败')
+  }
+}
+
 // 处理子组件的刷新事件
 const handleRefresh = () => {
   // 当子组件数据变化时，刷新相关数据
   fetchUsersList()
   fetchRolesList()
+  fetchPermissionsList()
+  fetchSystemConfig()
 }
 
 // 初始化
 onMounted(() => {
   fetchUsersList()
   fetchRolesList()
+  fetchPermissionsList()
+  fetchSystemConfig()
 })
 </script>
 

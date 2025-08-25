@@ -128,3 +128,16 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 
 	h.respondWithSuccess(w, http.StatusOK, "Token refreshed successfully", response)
 }
+
+// Logout 用户登出
+func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
+	userID, _, _, ok := middleware.GetUserFromContext(r.Context())
+	if ok {
+		h.logger.WithFields(map[string]interface{}{
+			"user_id": userID,
+			"ip":      middleware.GetClientIP(r),
+		}).Info("User logged out")
+	}
+
+	h.respondWithSuccess(w, http.StatusOK, "Logout successful", nil)
+}

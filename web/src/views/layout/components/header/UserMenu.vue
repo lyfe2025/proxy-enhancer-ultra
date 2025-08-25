@@ -1,7 +1,7 @@
 <template>
   <el-dropdown @command="handleCommand">
     <div class="user-info">
-      <el-avatar size="32" :src="userInfo.avatar">
+      <el-avatar :size="32" :src="userInfo.avatar">
         <el-icon><User /></el-icon>
       </el-avatar>
       <span class="username">{{ userInfo.username }}</span>

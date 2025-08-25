@@ -1,5 +1,5 @@
 <template>
-  <div class="login-container">
+  <div class="login-container dark">
     <!-- 背景装饰 -->
     <LoginBackground />
 
@@ -126,8 +126,17 @@ const handleForgotPassword = async (formData: any) => {
 // 处理社交登录
 const handleSocialLogin = (provider: string) => {
   console.log('社交登录:', provider)
+  
+  // 根据不同的提供商显示不同的消息
+  const providerNames: Record<string, string> = {
+    wechat: '微信',
+    qq: 'QQ',
+    github: 'GitHub',
+    google: 'Google'
+  }
+  
   // 实际实现应该跳转到对应的OAuth授权页面
-  ElMessage.info(`${provider}登录功能开发中...`)
+  ElMessage.info(`${providerNames[provider] || provider}登录功能开发中...`)
 }
 
 // 页面挂载时检查是否需要显示验证码
@@ -151,11 +160,7 @@ checkCaptchaRequirement()
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(
-    135deg,
-    #667eea 0%,
-    #764ba2 100%
-  );
+  background: var(--bg-primary);
   padding: 20px;
   overflow: hidden;
 }

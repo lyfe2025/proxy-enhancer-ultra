@@ -235,8 +235,8 @@ const handleCurrentChange = (page: number) => {
 }
 
 // 工具函数
-const getSubmissionStatusTagType = (status: string) => {
-  const statusMap: Record<string, string> = {
+const getSubmissionStatusTagType = (status: string): "success" | "info" | "warning" | "danger" | "primary" => {
+  const statusMap: Record<string, "success" | "info" | "warning" | "danger" | "primary"> = {
     pending: 'warning',
     processed: 'success',
     ignored: 'info'

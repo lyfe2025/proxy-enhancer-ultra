@@ -60,7 +60,7 @@ import DashboardSystemStatus from './components/DashboardSystemStatus.vue'
 import DashboardQuickActions from './components/DashboardQuickActions.vue'
 
 // 导入API
-import { dashboardApi } from '@/api/dashboard'
+import * as dashboardApi from '@/api/dashboard'
 
 const router = useRouter()
 
@@ -84,7 +84,7 @@ const chartData = reactive({
 const recentActivities = ref<any[]>([])
 const systemServices = ref<any[]>([])
 
-let refreshTimer: NodeJS.Timeout | null = null
+let refreshTimer: number | null = null
 
 // 初始化
 onMounted(() => {

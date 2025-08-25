@@ -12,6 +12,7 @@ export interface ProxyConfig {
   password?: string
   status: 'active' | 'inactive' | 'error'
   description?: string
+  tags?: string | string[]
   createdAt?: string
   updatedAt?: string
   lastUsed?: string
@@ -46,7 +47,7 @@ export const getProxyList = (params: PageParams & {
   type?: string
   status?: string
 }) => {
-  return api.get<ApiResponse<PageResponse<ProxyConfig>>>('/proxy/list', { params })
+  return api.get<ApiResponse<PageResponse<ProxyConfig>>>('/api/admin/proxies', { params })
 }
 
 // 获取代理详情
@@ -56,7 +57,7 @@ export const getProxyDetail = (id: number) => {
 
 // 创建代理
 export const createProxy = (data: Omit<ProxyConfig, 'id' | 'createdAt' | 'updatedAt'>) => {
-  return api.post<ApiResponse<ProxyConfig>>('/proxy', data)
+  return api.post<ApiResponse<ProxyConfig>>('/api/admin/proxies', data)
 }
 
 // 更新代理
@@ -81,12 +82,12 @@ export const testProxy = (id: number) => {
 
 // 批量测试代理
 export const batchTestProxy = (ids: number[]) => {
-  return api.post<ApiResponse<ProxyTestResult[]>>('/proxy/batch-test', { ids })
+  return api.post<ApiResponse<ProxyTestResult[]>>('/api/admin/proxies/batch-test', { ids })
 }
 
 // 获取代理统计信息
 export const getProxyStats = () => {
-  return api.get<ApiResponse<ProxyStats>>('/proxy/stats')
+  return api.get<ApiResponse<ProxyStats>>('/api/admin/proxies/stats')
 }
 
 // 启用/禁用代理
@@ -96,14 +97,14 @@ export const toggleProxyStatus = (id: number, status: 'active' | 'inactive') => 
 
 // 批量启用/禁用代理
 export const batchToggleProxyStatus = (ids: number[], status: 'active' | 'inactive') => {
-  return api.patch<ApiResponse<void>>('/proxy/batch-status', { ids, status })
+  return api.patch<ApiResponse<void>>('/api/admin/proxies/batch-status', { ids, status })
 }
 
 // 导入代理配置
 export const importProxyConfig = (file: File) => {
   const formData = new FormData()
   formData.append('file', file)
-  return api.post<ApiResponse<{ success: number; failed: number }>>('/proxy/import', formData, {
+  return api.post<ApiResponse<{ success: number; failed: number }>>('/api/admin/proxies/import', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -112,7 +113,7 @@ export const importProxyConfig = (file: File) => {
 
 // 导出代理配置
 export const exportProxyConfig = (ids?: number[]) => {
-  return api.post<Blob>('/proxy/export', { ids }, {
+  return api.post<Blob>('/api/admin/proxies/export', { ids }, {
     responseType: 'blob'
   })
 }

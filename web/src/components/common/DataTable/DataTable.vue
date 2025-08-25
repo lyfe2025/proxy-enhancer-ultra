@@ -84,8 +84,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, type VNode } from 'vue'
 import { Refresh, Search } from '@element-plus/icons-vue'
+import type { TableColumnCtx } from 'element-plus'
 
 // 接口定义
 export interface TableColumn {
@@ -95,7 +96,7 @@ export interface TableColumn {
   minWidth?: number | string
   fixed?: boolean | string
   sortable?: boolean
-  formatter?: Function
+  formatter?: TableColumnCtx<any>["formatter"]
   slot?: string // 自定义插槽名称
 }
 

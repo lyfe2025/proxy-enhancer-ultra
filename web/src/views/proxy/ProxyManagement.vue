@@ -10,7 +10,7 @@
         <p class="page-description">管理和配置代理服务器，监控代理状态和性能</p>
       </div>
       <div class="header-right">
-        <el-button type="primary" @click="showAddDialog = true">
+        <el-button type="primary" @click="() => { editingProxy = null; showFormDialog = true }">
           <el-icon><Plus /></el-icon>
           添加代理
         </el-button>
@@ -25,8 +25,9 @@
     <ProxyStats :stats="stats" />
 
     <!-- 搜索和筛选 -->
-    <ProxyFilter
-      v-model="searchForm"
+    <ProxySearchFilter
+      :model-value="searchForm"
+      @update:model-value="(value) => Object.assign(searchForm, value)"
       @search="handleSearch"
       @reset="resetSearch"
     />
@@ -40,130 +41,67 @@
       @test="testProxy"
       @batch-test="batchTest"
       @edit="editProxy"
-      @delete="deleteProxy"
-      @batch-delete="batchDelete"
+      @delete="handleDeleteProxy"
+      @batch-delete="handleBatchDelete"
       @selection-change="handleSelectionChange"
     />
 
     <!-- 添加/编辑代理对话框 -->
     <ProxyFormDialog
-      v-model="showAddDialog"
-      :editing-proxy="editingProxy"
-      :saving="saving"
-      @save="saveProxy"
+      v-model:visible="showFormDialog"
+      :edit-data="editingProxy"
+      :submitting="saving"
+      @submit="handleSaveProxy"
       @close="resetForm"
     />
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import {
-  Connection,
-  Plus,
-  Refresh,
-  Search,
-  RefreshLeft,
-  VideoPlay,
-  Delete,
-  Edit,
-  CircleCheck,
-  CircleClose,
-  TrendCharts
-} from '@element-plus/icons-vue'
-import { proxyApi, type ProxyConfig } from '@/api/proxy'
-import type { ProxyCreateRequest, ProxyUpdateRequest } from '@/types/proxy'
-import { getTypeTagType, getStatusTagType, getStatusText, formatBytes, formatDate } from './utils/proxyUtils'
-import { PROXY_TYPE_OPTIONS, PROXY_STATUS_OPTIONS, PAGINATION_CONFIG, DEFAULT_PROXY_FORM, DEFAULT_SEARCH_FORM, PROXY_FORM_RULES, PORT_RANGE } from './constants/proxyConstants'
+import { onMounted } from 'vue'
+import { Connection, Plus, Refresh } from '@element-plus/icons-vue'
 
-// 表单验证规则
-const proxyFormRules = PROXY_FORM_RULES
+// 导入组合式函数
+import { useProxyManagement } from './composables/useProxyManagement'
+import { useProxyStats } from './composables/useProxyStats'
+import { useProxyForm } from './composables/useProxyForm'
 
 // 导入子组件
 import ProxyStats from './components/ProxyStats.vue'
-import ProxyFilter from './components/ProxyFilter.vue'
+import ProxySearchFilter from './components/ProxySearchFilter.vue'
 import ProxyList from './components/ProxyList.vue'
 import ProxyFormDialog from './components/ProxyFormDialog.vue'
 
-// 响应式数据
-const loading = ref(false)
-const saving = ref(false)
-const showAddDialog = ref(false)
-const editingProxy = ref<ProxyConfig | null>(null)
+// 使用组合式函数
+const {
+  loading,
+  proxyList,
+  searchForm,
+  pagination,
+  fetchProxyList,
+  handleSearch,
+  resetSearch,
+  updatePagination,
+  testProxy,
+  batchTest,
+  deleteProxy,
+  batchDelete,
+  handleSelectionChange
+} = useProxyManagement()
 
-// 统计数据
-const stats = reactive({
-  total: 0,
-  active: 0,
-  error: 0,
-  traffic: 0
-})
+const {
+  stats,
+  fetchStats
+} = useProxyStats()
 
-// 搜索表单
-const searchForm = reactive({ ...DEFAULT_SEARCH_FORM })
-
-// 代理列表
-const proxyList = ref<ProxyConfig[]>([])
-
-// 代理表单
-const proxyForm = reactive({ ...DEFAULT_PROXY_FORM })
-
-// 分页
-interface Pagination {
-  page: number
-  size: number
-  total: number
-}
-
-const pagination = reactive<Pagination>({
-  page: PAGINATION_CONFIG.DEFAULT_PAGE,
-  size: PAGINATION_CONFIG.DEFAULT_SIZE,
-  total: 0
-})
-
-// 获取代理列表
-const fetchProxyList = async () => {
-  try {
-    loading.value = true
-    const params = {
-      page: pagination.page,
-      size: pagination.size,
-      keyword: searchForm.keyword,
-      type: searchForm.type,
-      status: searchForm.status
-    }
-    const response = await proxyApi.getProxies(params)
-    proxyList.value = (response.data as any).data || []
-    pagination.total = (response.data as any).total || 0
-  } catch (error) {
-    ElMessage.error('获取代理列表失败')
-  } finally {
-    loading.value = false
-  }
-}
-
-// 获取统计数据
-const fetchStats = async () => {
-  try {
-    const response = await proxyApi.getProxyStats()
-    Object.assign(stats, response.data)
-  } catch (error) {
-    console.error('获取统计数据失败:', error)
-  }
-}
-
-// 搜索处理
-const handleSearch = () => {
-  pagination.page = 1
-  fetchProxyList()
-}
-
-// 重置搜索
-const resetSearch = () => {
-  Object.assign(searchForm, DEFAULT_SEARCH_FORM)
-  handleSearch()
-}
+const {
+  saving,
+  showFormDialog,
+  editingProxy,
+  editProxy,
+  saveProxy,
+  resetForm
+} = useProxyForm()
 
 // 刷新数据
 const refreshData = () => {
@@ -171,153 +109,25 @@ const refreshData = () => {
   fetchStats()
 }
 
-// 更新分页
-const updatePagination = (newPagination: Pagination) => {
-  Object.assign(pagination, newPagination)
-  fetchProxyList()
-}
-
-// 选择变化
-const handleSelectionChange = (selection: ProxyConfig[]) => {
-  // 在这里处理选择变化，如果需要的话
-}
-
-// 测试代理
-const testProxy = async (proxy: ProxyConfig) => {
-  try {
-    if (!proxy.id) {
-      ElMessage.error('代理ID无效')
-      return
-    }
-    await proxyApi.testProxy(proxy.id)
-    ElMessage.success('代理测试成功')
-    fetchProxyList()
-  } catch (error) {
-    ElMessage.error('代理测试失败')
-  }
-}
-
-// 批量测试
-const batchTest = async (proxies: ProxyConfig[]) => {
-  try {
-    const ids = proxies.map(p => p.id).filter(id => id !== undefined) as number[]
-    for (const id of ids) {
-      await proxyApi.testProxy(id)
-    }
-    ElMessage.success('批量测试已启动')
-    fetchProxyList()
-  } catch (error) {
-    ElMessage.error('批量测试失败')
-  }
-}
-
-// 编辑代理
-const editProxy = (proxy: ProxyConfig) => {
-  editingProxy.value = proxy
-  showAddDialog.value = true
-}
-
-// 删除代理
-const deleteProxy = async (proxy: ProxyConfig) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除代理 "${proxy.name}" 吗？`,
-      '确认删除',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
-    if (!proxy.id) {
-      ElMessage.error('代理ID无效')
-      return
-    }
-    await proxyApi.deleteProxy(proxy.id)
-    ElMessage.success('删除成功')
+// 保存代理处理（需要在保存后刷新数据）
+const handleSaveProxy = async (form: any) => {
+  const success = await saveProxy(form)
+  if (success) {
     fetchProxyList()
     fetchStats()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('删除失败')
-    }
   }
 }
 
-// 批量删除
-const batchDelete = async (proxies: ProxyConfig[]) => {
-  try {
-    await ElMessageBox.confirm(
-      `确定要删除选中的 ${proxies.length} 个代理吗？`,
-      '确认批量删除',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning'
-      }
-    )
-    const ids = proxies.map(p => p.id).filter(id => id !== undefined) as number[]
-    for (const id of ids) {
-      await proxyApi.deleteProxy(id)
-    }
-    ElMessage.success('批量删除成功')
-    fetchProxyList()
-    fetchStats()
-  } catch (error) {
-    if (error !== 'cancel') {
-      ElMessage.error('批量删除失败')
-    }
-  }
+// 删除代理处理（需要在删除后刷新统计）
+const handleDeleteProxy = async (proxy: any) => {
+  await deleteProxy(proxy)
+  fetchStats()
 }
 
-// 保存代理
-const saveProxy = async (form: any) => {
-  try {
-    saving.value = true
-    
-    if (editingProxy.value) {
-      // 更新代理
-      const updateData: ProxyUpdateRequest = {
-        name: form.name,
-        type: form.type as 'http' | 'https' | 'socks5',
-        host: form.host,
-        port: form.port,
-        username: form.username || undefined,
-        password: form.password || undefined,
-        description: form.description || undefined
-      }
-      await proxyApi.updateProxy(editingProxy.value.id!, updateData)
-      ElMessage.success('更新成功')
-    } else {
-      // 创建代理
-      const createData = {
-        name: form.name,
-        type: form.type,
-        host: form.host,
-        port: form.port,
-        username: form.username || undefined,
-        password: form.password || undefined,
-        status: 'inactive' as const,
-        description: form.description || undefined
-      }
-      await proxyApi.createProxy(createData)
-      ElMessage.success('添加成功')
-    }
-    
-    showAddDialog.value = false
-    fetchProxyList()
-    fetchStats()
-  } catch (error) {
-    ElMessage.error(editingProxy.value ? '更新失败' : '添加失败')
-  } finally {
-    saving.value = false
-  }
-}
-
-// 重置表单
-const resetForm = () => {
-  editingProxy.value = null
-  Object.assign(proxyForm, DEFAULT_PROXY_FORM)
+// 批量删除处理（需要在删除后刷新统计）
+const handleBatchDelete = async (proxies: any[]) => {
+  await batchDelete(proxies)
+  fetchStats()
 }
 
 // 初始化

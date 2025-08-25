@@ -71,8 +71,8 @@ const isFullscreen = ref(false)
 
 // 用户信息
 const userInfo = computed(() => ({
-  username: authStore.userInfo?.username || '用户',
-  avatar: authStore.userInfo?.avatar
+  username: authStore.user?.username || '用户',
+  avatar: authStore.user?.avatar
 }))
 
 // 通知数据
@@ -110,8 +110,8 @@ const breadcrumbList = computed(() => {
 
   return matched.map(item => ({
     path: item.path,
-    title: item.meta?.title || '',
-    icon: item.meta?.icon
+    title: (item.meta?.title as string) || '',
+    icon: item.meta?.icon as string
   }))
 })
 
@@ -215,7 +215,7 @@ const toggleFullscreen = () => {
 
 // 主题切换
 const toggleTheme = () => {
-  themeStore.toggleDark()
+  themeStore.toggleTheme()
 }
 
 // 通知管理

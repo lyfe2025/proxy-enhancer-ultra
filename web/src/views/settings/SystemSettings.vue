@@ -39,7 +39,7 @@
           @role-created="handleRoleCreated"
           @role-updated="handleRoleUpdated"
           @role-deleted="handleRoleDeleted"
-          @refresh="handleRolesRefresh"
+          @refresh-roles="handleRolesRefresh"
         />
       </el-tab-pane>
 
@@ -60,8 +60,10 @@
         <SystemConfiguration
           :config="systemConfig"
           :loading="configLoading"
-          @config-saved="handleConfigSaved"
+          @config-updated="handleConfigUpdated"
           @config-reset="handleConfigReset"
+          @save-config="handleSaveConfig"
+          @test-email="handleTestEmail"
         />
       </el-tab-pane>
     </el-tabs>
@@ -92,10 +94,8 @@
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { InfoFilled } from '@element-plus/icons-vue'
-import { UserManagement } from '@/components'
-import RoleManagement from './components/RoleManagement.vue'
+import { UserManagement, RoleManagement, SystemConfiguration } from '@/components'
 import PermissionManagement from './components/PermissionManagement.vue'
-import SystemConfiguration from './components/SystemConfiguration.vue'
 import { getUserList, getRoleList, getPermissionList, getSystemStats } from '@/api/system'
 import { useAuthStore } from '@/store'
 import type { User, Role, Permission, SystemConfig, SystemInfo } from '@/types/system'
@@ -280,13 +280,36 @@ const handlePermissionsRefresh = () => {
 }
 
 // 系统配置事件处理
-const handleConfigSaved = (config: SystemConfig) => {
+const handleConfigUpdated = (config: SystemConfig) => {
   systemConfig.value = config
-  ElMessage.success('系统配置保存成功')
+  ElMessage.success('系统配置更新成功')
 }
 
 const handleConfigReset = () => {
-  ElMessage.success('系统配置重置成功')
+  // 重新获取配置数据
+  // fetchSystemConfig() // TODO: 实现配置获取
+  ElMessage.info('系统配置已重置')
+}
+
+const handleSaveConfig = async (config: SystemConfig) => {
+  try {
+    // TODO: 实现保存配置API
+    systemConfig.value = config
+    ElMessage.success('系统配置保存成功')
+  } catch (error) {
+    console.error('保存系统配置失败:', error)
+    ElMessage.error('保存系统配置失败')
+  }
+}
+
+const handleTestEmail = async (emailConfig: any) => {
+  try {
+    // TODO: 实现邮件测试API
+    ElMessage.info('邮件配置测试功能开发中')
+  } catch (error) {
+    console.error('邮件测试失败:', error)
+    ElMessage.error('邮件测试失败')
+  }
 }
 
 // 初始化

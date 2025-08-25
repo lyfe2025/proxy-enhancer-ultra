@@ -130,7 +130,7 @@ const loadRules = async () => {
       page_size: pagination.size,
       ...searchForm.value
     })
-    rulesList.value = response.data.data?.items || []
+    rulesList.value = response.data.data?.list || []
     pagination.total = response.data.data?.total || 0
   } catch (error) {
     console.error('加载规则列表失败:', error)

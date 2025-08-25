@@ -60,24 +60,13 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, type RouteRecordRaw } from 'vue-router'
 import { Connection, Expand, Fold } from '@element-plus/icons-vue'
 import SidebarMenuItem from './SidebarMenuItem.vue'
 
-interface MenuRoute {
-  path: string
-  name?: string
-  meta?: {
-    title?: string
-    icon?: string
-    hidden?: boolean
-  }
-  children?: MenuRoute[]
-}
-
 const props = defineProps<{
   sidebarCollapsed: boolean
-  menuRoutes: MenuRoute[]
+  menuRoutes: RouteRecordRaw[]
 }>()
 
 const emit = defineEmits<{

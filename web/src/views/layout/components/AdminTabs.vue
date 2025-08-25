@@ -105,8 +105,7 @@ const goToTab = (tab: TabView) => {
   if (tab.path !== route.path) {
     router.push({
       path: tab.path,
-      query: tab.query,
-      params: tab.params
+      query: tab.query
     })
   }
 }

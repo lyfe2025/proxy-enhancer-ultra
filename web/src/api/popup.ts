@@ -11,7 +11,7 @@ export const popupApi = {
     search?: string
     is_active?: boolean
   }) {
-    return api.get<PaginatedResponse<Popup>>('/popups', { params })
+    return api.get<PaginatedResponse<Popup>>('/api/admin/popups', { params })
   },
   
   // 获取单个弹窗
@@ -21,7 +21,7 @@ export const popupApi = {
   
   // 创建弹窗
   createPopup(data: Omit<Popup, 'id' | 'created_at' | 'updated_at'>) {
-    return api.post<Popup>('/popups', data)
+    return api.post<Popup>('/api/admin/popups', data)
   },
   
   // 更新弹窗
@@ -61,7 +61,7 @@ export const submissionApi = {
     end_date?: string
     search?: string
   }) {
-    return api.get<PaginatedResponse<Submission>>('/submissions', { params })
+    return api.get<PaginatedResponse<Submission>>('/api/admin/submissions', { params })
   },
   
   // 获取单个提交数据
@@ -76,7 +76,7 @@ export const submissionApi = {
   
   // 批量删除提交数据
   batchDeleteSubmissions(ids: number[]) {
-    return api.post<null>('/submissions/batch-delete', { ids })
+    return api.post<null>('/api/admin/submissions/batch-delete', { ids })
   },
   
   // 导出提交数据
@@ -86,7 +86,7 @@ export const submissionApi = {
     end_date?: string
     format?: 'csv' | 'excel' | 'json'
   }) {
-    return api.get<{ download_url: string }>('/submissions/export', { params })
+    return api.get<{ download_url: string }>('/api/admin/submissions/export', { params })
   },
   
   // 获取提交数据统计

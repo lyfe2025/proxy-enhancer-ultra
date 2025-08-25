@@ -3,6 +3,7 @@ export interface User {
   id: string
   username: string
   email: string
+  nickname?: string
   role_id: string
   role_name?: string
   status: 'active' | 'inactive' | 'locked'
@@ -144,6 +145,7 @@ export interface UserForm {
   id?: string
   username: string
   email: string
+  nickname?: string
   password?: string
   confirm_password?: string
   role_id: string

@@ -210,8 +210,8 @@ const handleClose = () => {
 }
 
 // 工具函数
-const getStatusTagType = (status: string) => {
-  const statusMap: Record<string, string> = {
+const getStatusTagType = (status: string): "success" | "info" | "warning" | "danger" | "primary" => {
+  const statusMap: Record<string, "success" | "info" | "warning" | "danger" | "primary"> = {
     pending: 'warning',
     processed: 'success',
     ignored: 'info'
@@ -228,8 +228,8 @@ const getStatusText = (status: string) => {
   return statusMap[status] || status
 }
 
-const getHistoryType = (action: string) => {
-  const typeMap: Record<string, string> = {
+const getHistoryType = (action: string): "success" | "info" | "warning" | "danger" | "primary" => {
+  const typeMap: Record<string, "success" | "info" | "warning" | "danger" | "primary"> = {
     '创建': 'primary',
     '处理': 'success',
     '忽略': 'warning',

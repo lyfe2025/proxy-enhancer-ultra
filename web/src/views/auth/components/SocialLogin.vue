@@ -63,28 +63,20 @@ const emit = defineEmits<{
 }>()
 
 const handleSocialLogin = (provider: SocialProvider) => {
-  // 这里可以根据不同的提供商显示不同的消息
-  const providerNames = {
-    wechat: '微信',
-    qq: 'QQ',
-    github: 'GitHub',
-    google: 'Google'
-  }
-  
-  ElMessage.info(`${providerNames[provider]}登录功能开发中...`)
+  // 只通过emit传递事件，让父组件处理消息显示
   emit('socialLogin', provider)
 }
 </script>
 
 <style scoped>
 .social-login {
-  margin-top: 24px;
+  margin-top: var(--spacing-lg);
 }
 
 .social-login-divider {
   position: relative;
   text-align: center;
-  margin-bottom: 20px;
+  margin-bottom: var(--spacing-md);
 }
 
 .social-login-divider::before {
@@ -94,47 +86,136 @@ const handleSocialLogin = (provider: SocialProvider) => {
   left: 0;
   right: 0;
   height: 1px;
-  background: var(--el-border-color-light);
+  background: var(--border-primary);
 }
 
 .divider-text {
-  background: var(--el-bg-color);
-  padding: 0 16px;
-  font-size: 12px;
-  color: var(--el-text-color-placeholder);
+  background: var(--bg-secondary);
+  padding: 0 var(--spacing-md);
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
   position: relative;
   z-index: 1;
+  font-weight: var(--font-medium);
+  letter-spacing: 0.3px;
 }
 
 .social-buttons {
   display: flex;
   justify-content: center;
-  gap: 16px;
+  gap: var(--spacing-md);
 }
 
-.social-buttons .el-button {
-  width: 44px;
-  height: 44px;
-  transition: all 0.3s ease;
+.social-buttons :deep(.el-button) {
+  width: 48px;
+  height: 48px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-full);
+  transition: all var(--transition-normal);
+  position: relative;
+  overflow: hidden;
 }
 
-.social-buttons .el-button:hover {
+.social-buttons :deep(.el-button::before) {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: var(--primary-alpha-10);
+  opacity: 0;
+  transition: opacity var(--transition-normal);
+}
+
+.social-buttons :deep(.el-button:hover) {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  border-color: var(--primary-color);
+  box-shadow: var(--shadow-md), 0 0 20px var(--primary-alpha-30);
 }
 
-.social-buttons .el-button .el-icon {
+.social-buttons :deep(.el-button:hover::before) {
+  opacity: 1;
+}
+
+.social-buttons :deep(.el-button:active) {
+  transform: translateY(-1px);
+}
+
+.social-buttons :deep(.el-button .el-icon) {
   font-size: 20px;
+  color: var(--text-secondary);
+  transition: color var(--transition-normal);
+  position: relative;
+  z-index: 2;
 }
 
-.social-buttons .el-button .el-icon svg {
+.social-buttons :deep(.el-button:hover .el-icon) {
+  color: var(--primary-color);
+}
+
+.social-buttons :deep(.el-button .el-icon svg) {
   width: 20px;
   height: 20px;
   fill: currentColor;
 }
 
-/* 深色主题适配 */
-.dark .divider-text {
-  background: var(--el-bg-color-overlay);
+/* 特定社交平台颜色 */
+.social-buttons :deep(.el-button:nth-child(1):hover) {
+  border-color: #07c160; /* 微信绿 */
+  box-shadow: var(--shadow-md), 0 0 20px rgba(7, 193, 96, 0.3);
+}
+
+.social-buttons :deep(.el-button:nth-child(1):hover .el-icon) {
+  color: #07c160;
+}
+
+.social-buttons :deep(.el-button:nth-child(2):hover) {
+  border-color: #12b7f5; /* QQ蓝 */
+  box-shadow: var(--shadow-md), 0 0 20px rgba(18, 183, 245, 0.3);
+}
+
+.social-buttons :deep(.el-button:nth-child(2):hover .el-icon) {
+  color: #12b7f5;
+}
+
+.social-buttons :deep(.el-button:nth-child(3):hover) {
+  border-color: #333; /* GitHub黑 */
+  box-shadow: var(--shadow-md), 0 0 20px rgba(51, 51, 51, 0.3);
+}
+
+.social-buttons :deep(.el-button:nth-child(3):hover .el-icon) {
+  color: #333;
+}
+
+.social-buttons :deep(.el-button:nth-child(4):hover) {
+  border-color: #4285f4; /* Google蓝 */
+  box-shadow: var(--shadow-md), 0 0 20px rgba(66, 133, 244, 0.3);
+}
+
+.social-buttons :deep(.el-button:nth-child(4):hover .el-icon) {
+  color: #4285f4;
+}
+
+/* 响应式设计 */
+@media (max-width: 480px) {
+  .social-buttons {
+    gap: var(--spacing-sm);
+  }
+  
+  .social-buttons :deep(.el-button) {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .social-buttons :deep(.el-button .el-icon) {
+    font-size: 18px;
+  }
+  
+  .social-buttons :deep(.el-button .el-icon svg) {
+    width: 18px;
+    height: 18px;
+  }
 }
 </style>

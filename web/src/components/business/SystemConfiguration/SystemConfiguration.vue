@@ -39,6 +39,22 @@
           <el-form-item label="系统版本" prop="system_version">
             <el-input v-model="configData.system_version" placeholder="请输入系统版本" />
           </el-form-item>
+          <el-form-item label="系统Logo">
+            <el-input v-model="configData.system_logo" placeholder="请输入Logo URL" />
+          </el-form-item>
+          <el-form-item label="语言">
+            <el-select v-model="configData.language" placeholder="选择语言">
+              <el-option label="中文" value="zh-CN" />
+              <el-option label="English" value="en-US" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="时区">
+            <el-select v-model="configData.timezone" placeholder="选择时区">
+              <el-option label="Asia/Shanghai" value="Asia/Shanghai" />
+              <el-option label="UTC" value="UTC" />
+              <el-option label="America/New_York" value="America/New_York" />
+            </el-select>
+          </el-form-item>
           <el-form-item label="维护模式">
             <el-switch
               v-model="configData.maintenance_mode"
@@ -104,6 +120,14 @@
               inactive-text="禁用"
             />
           </el-form-item>
+          <el-form-item label="验证码阈值" v-if="configData.enable_captcha">
+            <el-input-number
+              v-model="configData.captcha_threshold"
+              :min="1"
+              :max="10"
+              controls-position="right"
+            />
+          </el-form-item>
         </div>
 
         <!-- 邮件设置 -->
@@ -143,6 +167,12 @@
               active-text="启用"
               inactive-text="禁用"
             />
+          </el-form-item>
+          <el-form-item>
+            <el-button @click="testEmailConfig" :loading="testingEmail">
+              <el-icon><Message /></el-icon>
+              测试邮件配置
+            </el-button>
           </el-form-item>
         </div>
 
@@ -216,7 +246,7 @@
         <!-- 日志设置 -->
         <div v-show="activeTab === 'logging'" class="config-section">
           <h3>日志设置</h3>
-          <el-form-item label="日志级别" prop="logging.level">
+          <el-form-item label="日志级别" prop="log_level">
             <el-select v-model="configData.log_level" placeholder="请选择日志级别">
               <el-option label="DEBUG" value="debug" />
               <el-option label="INFO" value="info" />
@@ -224,7 +254,7 @@
               <el-option label="ERROR" value="error" />
             </el-select>
           </el-form-item>
-          <el-form-item label="日志保留天数" prop="logging.retention_days">
+          <el-form-item label="日志保留天数" prop="log_retention_days">
             <el-input-number
               v-model="configData.log_retention_days"
               :min="1"
@@ -232,14 +262,21 @@
               controls-position="right"
             />
           </el-form-item>
-          <el-form-item label="启用文件日志">
+          <el-form-item label="启用访问日志">
             <el-switch
               v-model="configData.enable_access_log"
               active-text="启用"
               inactive-text="禁用"
             />
           </el-form-item>
-          <el-form-item label="启用数据库日志">
+          <el-form-item label="启用错误日志">
+            <el-switch
+              v-model="configData.enable_error_log"
+              active-text="启用"
+              inactive-text="禁用"
+            />
+          </el-form-item>
+          <el-form-item label="启用审计日志">
             <el-switch
               v-model="configData.enable_audit_log"
               active-text="启用"
@@ -315,6 +352,7 @@
     <div class="config-actions">
       <el-button @click="resetConfig">重置</el-button>
       <el-button type="primary" @click="saveConfig" :loading="saving">
+        <el-icon><Check /></el-icon>
         保存配置
       </el-button>
     </div>
@@ -324,21 +362,25 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { ElMessage, type FormInstance } from 'element-plus'
+import { Message, Check } from '@element-plus/icons-vue'
 import type { SystemConfig } from '@/types/system'
-// import { systemApi } from '@/api/system'
 
 // Props
 interface Props {
-  config: SystemConfig
-  loading: boolean
+  config?: SystemConfig
+  loading?: boolean
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  loading: false
+})
 
 // Emits
 interface Emits {
   'config-updated': [config: SystemConfig]
   'config-reset': []
+  'save-config': [config: SystemConfig]
+  'test-email': [config: any]
 }
 
 const emit = defineEmits<Emits>()
@@ -346,13 +388,15 @@ const emit = defineEmits<Emits>()
 // 响应式数据
 const activeTab = ref('basic')
 const saving = ref(false)
+const testingEmail = ref(false)
 const formRef = ref<FormInstance>()
 
 // 配置数据
 const configData = ref<SystemConfig>({
-  system_name: '',
-  system_description: '',
-  system_version: '',
+  system_name: 'Proxy Enhancer Ultra',
+  system_description: '高性能代理增强系统',
+  system_version: '1.0.0',
+  system_logo: '',
   maintenance_mode: false,
   maintenance_message: '',
   password_min_length: 8,
@@ -361,6 +405,23 @@ const configData = ref<SystemConfig>({
   session_timeout: 120,
   enable_2fa: false,
   enable_captcha: false,
+  captcha_threshold: 3,
+  enable_email_verification: false,
+  enable_sms_verification: false,
+  allow_registration: true,
+  default_role_id: '1',
+  timezone: 'Asia/Shanghai',
+  date_format: 'YYYY-MM-DD',
+  language: 'zh-CN',
+  theme: 'light' as 'light' | 'dark' | 'auto',
+  log_level: 'info' as 'debug' | 'info' | 'warn' | 'error',
+  log_retention_days: 30,
+  enable_access_log: true,
+  enable_error_log: true,
+  enable_audit_log: true,
+  backup_enabled: false,
+  backup_frequency: 'daily' as 'daily' | 'weekly' | 'monthly',
+  backup_retention_days: 7,
   email_host: '',
   email_port: 587,
   email_username: '',
@@ -378,11 +439,6 @@ const configData = ref<SystemConfig>({
   storage_domain: '',
   storage_access_key: '',
   storage_secret_key: '',
-  log_level: 'info',
-  log_retention_days: 30,
-  enable_access_log: true,
-  enable_error_log: true,
-  enable_audit_log: true,
   monitoring: {
     enabled: false,
     collection_interval: 60,
@@ -418,7 +474,7 @@ watch(
   () => props.config,
   (newConfig) => {
     if (newConfig) {
-      configData.value = { ...newConfig }
+      configData.value = { ...configData.value, ...newConfig }
     }
   },
   { immediate: true, deep: true }
@@ -432,8 +488,7 @@ const saveConfig = async () => {
     await formRef.value.validate()
     saving.value = true
     
-    // TODO: 实现API调用
-    // const updatedConfig = await systemApi.updateConfig(configData.value)
+    emit('save-config', configData.value)
     emit('config-updated', configData.value)
     ElMessage.success('配置保存成功')
   } catch (error) {
@@ -445,11 +500,42 @@ const saveConfig = async () => {
 }
 
 const resetConfig = () => {
-  configData.value = { ...props.config }
+  if (props.config) {
+    configData.value = { ...props.config }
+  }
   formRef.value?.resetFields()
   emit('config-reset')
   ElMessage.info('配置已重置')
 }
+
+const testEmailConfig = async () => {
+  try {
+    testingEmail.value = true
+    const emailConfig = {
+      host: configData.value.email_host,
+      port: configData.value.email_port,
+      username: configData.value.email_username,
+      password: configData.value.email_password,
+      from: configData.value.email_from,
+      secure: configData.value.email_secure
+    }
+    
+    emit('test-email', emailConfig)
+    ElMessage.success('邮件配置测试成功')
+  } catch (error) {
+    console.error('邮件配置测试失败:', error)
+    ElMessage.error('邮件配置测试失败')
+  } finally {
+    testingEmail.value = false
+  }
+}
+
+// 暴露方法
+defineExpose({
+  saveConfig,
+  resetConfig,
+  configData
+})
 </script>
 
 <style scoped>
@@ -508,11 +594,5 @@ const resetConfig = () => {
 
 :deep(.el-form-item) {
   margin-bottom: 20px;
-}
-
-:deep(.el-checkbox-group) {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 </style>
