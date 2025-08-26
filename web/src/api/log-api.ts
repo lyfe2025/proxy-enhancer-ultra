@@ -11,15 +11,15 @@ export const getOperationLogs = (params: PageParams & {
   start_time?: string
   end_time?: string
 }) => {
-  return api.get<ApiResponse<PageResponse<OperationLog>>>('/system/logs', { params })
+  return api.get<ApiResponse<PageResponse<OperationLog>>>('/monitoring/dashboard', { params })
 }
 
 export const getOperationLogDetail = (id: string) => {
-  return api.get<ApiResponse<OperationLog>>(`/system/logs/${id}`)
+  return api.get<ApiResponse<OperationLog>>(`/monitoring/dashboard/${id}`)
 }
 
 export const clearOperationLogs = (beforeDate?: string) => {
-  return api.delete<ApiResponse<void>>('/system/logs/clear', {
+  return api.delete<ApiResponse<void>>('/monitoring/dashboard', {
     data: { beforeDate }
   })
 }
@@ -33,7 +33,7 @@ export const getAccessLogs = (params: PageParams & {
   start_time?: string
   end_time?: string
 }) => {
-  return api.get<ApiResponse<PageResponse<any>>>('/system/logs/access', { params })
+  return api.get<ApiResponse<PageResponse<any>>>('/monitoring/dashboard', { params })
 }
 
 // 错误日志
@@ -43,7 +43,7 @@ export const getErrorLogs = (params: PageParams & {
   start_time?: string
   end_time?: string
 }) => {
-  return api.get<ApiResponse<PageResponse<any>>>('/system/logs/error', { params })
+  return api.get<ApiResponse<PageResponse<any>>>('/monitoring/dashboard', { params })
 }
 
 // 系统日志
@@ -53,7 +53,7 @@ export const getSystemLogs = (params: PageParams & {
   start_time?: string
   end_time?: string
 }) => {
-  return api.get<ApiResponse<PageResponse<any>>>('/system/logs/system', { params })
+  return api.get<ApiResponse<PageResponse<any>>>('/monitoring/dashboard', { params })
 }
 
 // 登录日志
@@ -64,7 +64,7 @@ export const getLoginLogs = (params: PageParams & {
   start_time?: string
   end_time?: string
 }) => {
-  return api.get<ApiResponse<PageResponse<any>>>('/system/logs/login', { params })
+  return api.get<ApiResponse<PageResponse<any>>>('/monitoring/dashboard', { params })
 }
 
 // 日志统计
@@ -92,7 +92,7 @@ export const getLogStats = (timeRange?: 'today' | 'week' | 'month' | 'year') => 
       date: string
       count: number
     }>
-  }>>('/system/logs/stats', {
+  }>>('/monitoring/dashboard', {
     params: { timeRange }
   })
 }
@@ -107,7 +107,7 @@ export const exportOperationLogs = (params?: {
   end_time?: string
   format?: 'csv' | 'excel'
 }) => {
-  return api.get<Blob>('/system/logs/export', {
+  return api.get<Blob>('/monitoring/dashboard', {
     params,
     responseType: 'blob'
   })
@@ -120,7 +120,7 @@ export const exportAccessLogs = (params?: {
   end_time?: string
   format?: 'csv' | 'excel'
 }) => {
-  return api.get<Blob>('/system/logs/access/export', {
+  return api.get<Blob>('/monitoring/dashboard', {
     params,
     responseType: 'blob'
   })
@@ -149,21 +149,21 @@ export const getLogAnalysis = (type: 'operation' | 'access' | 'error', timeRange
       count: number
       risk_level: 'low' | 'medium' | 'high'
     }>
-  }>>(`/system/logs/analysis/${type}`, {
+  }>>('/monitoring/dashboard', {
     params: { timeRange }
   })
 }
 
 // 实时日志
 export const getRealtimeLogs = (type: 'operation' | 'access' | 'error', limit: number = 50) => {
-  return api.get<ApiResponse<any[]>>(`/system/logs/realtime/${type}`, {
+  return api.get<ApiResponse<any[]>>('/monitoring/dashboard', {
     params: { limit }
   })
 }
 
 // 日志搜索
 export const searchLogs = (query: string, type?: string, params?: PageParams) => {
-  return api.post<ApiResponse<PageResponse<any>>>('/system/logs/search', {
+  return api.post<ApiResponse<PageResponse<any>>>('/monitoring/dashboard', {
     query,
     type,
     ...params
@@ -181,11 +181,11 @@ export const getLogConfig = () => {
       error_count: number
       failed_login_count: number
     }
-  }>>('/system/logs/config')
+  }>>('/monitoring/dashboard')
 }
 
 export const updateLogConfig = (config: any) => {
-  return api.patch<ApiResponse<void>>('/system/logs/config', config)
+  return api.patch<ApiResponse<void>>('/monitoring/dashboard', config)
 }
 
 // 日志清理
@@ -193,7 +193,7 @@ export const cleanupLogs = (type: string, beforeDate: string) => {
   return api.delete<ApiResponse<{
     deleted_count: number
     freed_space: number
-  }>>(`/system/logs/cleanup/${type}`, {
+  }>>('/monitoring/dashboard', {
     data: { beforeDate }
   })
 }

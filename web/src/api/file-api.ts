@@ -9,7 +9,7 @@ export const uploadFile = (file: File, category?: string) => {
   if (category) {
     formData.append('category', category)
   }
-  return api.post<ApiResponse<FileUploadResponse>>('/system/upload', formData, {
+  return api.post<ApiResponse<FileUploadResponse>>('/files/upload', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -25,7 +25,7 @@ export const batchUploadFiles = (files: File[], category?: string) => {
   if (category) {
     formData.append('category', category)
   }
-  return api.post<ApiResponse<FileUploadResponse[]>>('/system/upload/batch', formData, {
+  return api.post<ApiResponse<FileUploadResponse[]>>('/files/upload/batch', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -49,7 +49,7 @@ export const uploadImage = (file: File, options?: {
       size: string
       url: string
     }>
-  }>>('/system/upload/image', formData, {
+  }>>('/files/upload/image', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -77,15 +77,15 @@ export const getFileList = (params?: {
     total: number
     page: number
     pageSize: number
-  }>>('/system/files', { params })
+  }>>('/files', { params })
 }
 
 export const deleteFile = (id: string) => {
-  return api.delete<ApiResponse<void>>(`/system/files/${id}`)
+  return api.delete<ApiResponse<void>>(`/files/${id}`)
 }
 
 export const batchDeleteFiles = (ids: string[]) => {
-  return api.delete<ApiResponse<void>>('/system/files/batch', { data: { ids } })
+  return api.delete<ApiResponse<void>>('/files/batch', { data: { ids } })
 }
 
 // 文件信息
@@ -101,7 +101,7 @@ export const getFileInfo = (id: string) => {
     metadata: Record<string, any>
     created_at: string
     updated_at: string
-  }>>(`/system/files/${id}`)
+  }>>(`/files/${id}`)
 }
 
 // 文件统计
@@ -124,26 +124,26 @@ export const getFileStats = () => {
       size: number
       created_at: string
     }>
-  }>>('/system/files/stats')
+  }>>('/files/stats')
 }
 
 // 系统备份API
 export const createSystemBackup = () => {
-  return api.post<ApiResponse<BackupInfo>>('/system/backup')
+  return api.post<ApiResponse<BackupInfo>>('/monitoring/backup')
 }
 
 export const getBackupList = () => {
-  return api.get<ApiResponse<BackupInfo[]>>('/system/backups')
+  return api.get<ApiResponse<BackupInfo[]>>('/monitoring/backups')
 }
 
 export const downloadBackup = (filename: string) => {
-  return api.get<Blob>(`/system/backups/${filename}/download`, {
+  return api.get<Blob>(`/monitoring/backups/${filename}/download`, {
     responseType: 'blob'
   })
 }
 
 export const deleteBackup = (filename: string) => {
-  return api.delete<ApiResponse<void>>(`/system/backups/${filename}`)
+  return api.delete<ApiResponse<void>>(`/monitoring/backups/${filename}`)
 }
 
 // 备份恢复
@@ -152,7 +152,7 @@ export const restoreBackup = (filename: string) => {
     success: boolean
     message: string
     restored_at: string
-  }>>(`/system/backups/${filename}/restore`)
+  }>>(`/monitoring/backups/${filename}/restore`)
 }
 
 // 备份配置
@@ -164,11 +164,11 @@ export const getBackupConfig = () => {
     compress: boolean
     storage_location: string
     max_backups: number
-  }>>('/system/backup/config')
+  }>>('/monitoring/backup/config')
 }
 
 export const updateBackupConfig = (config: any) => {
-  return api.patch<ApiResponse<void>>('/system/backup/config', config)
+  return api.patch<ApiResponse<void>>('/monitoring/backup/config', config)
 }
 
 // 文件清理
@@ -180,7 +180,7 @@ export const cleanupFiles = (params: {
   return api.delete<ApiResponse<{
     deleted_count: number
     freed_space: number
-  }>>('/system/files/cleanup', { data: params })
+  }>>('/files/cleanup', { data: params })
 }
 
 // 文件存储分析
@@ -203,7 +203,7 @@ export const getStorageAnalysis = () => {
       size: number
       percentage: number
     }>
-  }>>('/system/files/storage-analysis')
+  }>>('/files/storage-analysis')
 }
 
 // 文件搜索
@@ -215,7 +215,7 @@ export const searchFiles = (query: string, filters?: {
   date_from?: string
   date_to?: string
 }) => {
-  return api.post<ApiResponse<any[]>>('/system/files/search', {
+  return api.post<ApiResponse<any[]>>('/files/search', {
     query,
     filters
   })
@@ -232,7 +232,7 @@ export const scanFiles = (fileIds?: string[]) => {
       status: 'safe' | 'threat' | 'suspicious'
       details?: string
     }>
-  }>>('/system/files/scan', { fileIds })
+  }>>('/files/scan', { fileIds })
 }
 
 // 文件API对象导出

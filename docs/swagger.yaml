@@ -1,0 +1,305 @@
+basePath: /api
+definitions:
+  handlers.Response:
+    description: API响应的通用结构
+    properties:
+      data:
+        description: 响应数据
+      error:
+        description: 错误信息（仅在失败时返回）
+        example: 错误信息
+        type: string
+      message:
+        description: 响应消息
+        example: 操作成功
+        type: string
+      success:
+        description: 操作是否成功
+        example: true
+        type: boolean
+    type: object
+  models.Domain:
+    properties:
+      created_at:
+        description: 创建时间，自动设置
+        type: string
+      domain:
+        description: 域名地址
+        type: string
+      id:
+        description: 主键ID，自动生成UUID
+        type: string
+      is_primary:
+        description: 是否为主要域名
+        type: boolean
+      proxy_config:
+        allOf:
+        - $ref: '#/definitions/models.ProxyConfig'
+        description: 关联的代理配置对象
+      proxy_config_id:
+        description: 所属代理配置ID
+        type: string
+      ssl_enabled:
+        description: SSL/TLS 配置状态
+        type: boolean
+      updated_at:
+        description: 更新时间，自动维护
+        type: string
+    type: object
+  models.ProxyConfig:
+    properties:
+      created_at:
+        description: 创建时间，自动设置
+        type: string
+      domains:
+        description: 关联的域名配置列表
+        items:
+          $ref: '#/definitions/models.Domain'
+        type: array
+      id:
+        description: 主键ID，自动生成UUID
+        type: string
+      is_active:
+        description: 配置启用状态
+        type: boolean
+      name:
+        description: 配置名称，便于识别
+        type: string
+      proxy_domain:
+        description: 代理服务域名
+        type: string
+      settings:
+        description: 配置参数，JSON格式存储
+        type: string
+      target_url:
+        description: 代理目标地址
+        type: string
+      updated_at:
+        description: 更新时间，自动维护
+        type: string
+    type: object
+  services.CreateUserRequest:
+    properties:
+      email:
+        type: string
+      password:
+        minLength: 6
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    required:
+    - email
+    - password
+    - username
+    type: object
+  services.LoginRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+  services.LoginResponse:
+    properties:
+      expires_at:
+        type: string
+      token:
+        type: string
+      user:
+        $ref: '#/definitions/services.UserInfo'
+    type: object
+  services.UserInfo:
+    properties:
+      email:
+        type: string
+      enabled:
+        type: boolean
+      id:
+        type: string
+      role:
+        type: string
+      username:
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: 智能反向代理增强平台API文档
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: Proxy Enhancer Ultra API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: 使用用户名和密码进行登录认证
+      parameters:
+      - description: 登录请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/services.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登录成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/services.LoginResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/handlers.Response'
+        "401":
+          description: 认证失败
+          schema:
+            $ref: '#/definitions/handlers.Response'
+      summary: 用户登录
+      tags:
+      - 认证
+  /auth/logout:
+    post:
+      description: 登出当前用户，清除认证状态
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 登出成功
+          schema:
+            $ref: '#/definitions/handlers.Response'
+      security:
+      - BearerAuth: []
+      summary: 用户登出
+      tags:
+      - 认证
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: 使用刷新令牌获取新的访问令牌
+      parameters:
+      - description: 刷新令牌请求
+        in: body
+        name: request
+        required: true
+        schema:
+          properties:
+            token:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: 令牌刷新成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/services.LoginResponse'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/handlers.Response'
+        "401":
+          description: 令牌无效
+          schema:
+            $ref: '#/definitions/handlers.Response'
+      summary: 刷新访问令牌
+      tags:
+      - 认证
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: 创建新的用户账号
+      parameters:
+      - description: 注册请求
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/services.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 注册成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/services.UserInfo'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/handlers.Response'
+      summary: 用户注册
+      tags:
+      - 认证
+  /proxy/configs:
+    post:
+      consumes:
+      - application/json
+      description: 创建新的代理配置，包括代理域名、目标URL等设置
+      parameters:
+      - description: 代理配置
+        in: body
+        name: config
+        required: true
+        schema:
+          $ref: '#/definitions/models.ProxyConfig'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: 创建成功
+          schema:
+            allOf:
+            - $ref: '#/definitions/handlers.Response'
+            - properties:
+                data:
+                  $ref: '#/definitions/models.ProxyConfig'
+              type: object
+        "400":
+          description: 请求参数错误
+          schema:
+            $ref: '#/definitions/handlers.Response'
+        "401":
+          description: 未授权
+          schema:
+            $ref: '#/definitions/handlers.Response'
+      security:
+      - BearerAuth: []
+      summary: 创建代理配置
+      tags:
+      - 代理管理
+securityDefinitions:
+  BearerAuth:
+    description: Type "Bearer" followed by a space and JWT token.
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

@@ -70,7 +70,7 @@ export const getRuleList = (params: PageParams & {
   status?: string
   priority?: string
 }) => {
-  return api.get<ApiResponse<PageResponse<Rule>>>('/api/admin/rules', { params })
+  return api.get<ApiResponse<PageResponse<Rule>>>('/rules', { params })
 }
 
 // 获取规则详情
@@ -80,7 +80,7 @@ export const getRuleDetail = (id: number) => {
 
 // 创建规则
 export const createRule = (data: Omit<Rule, 'id' | 'createdAt' | 'updatedAt'>) => {
-  return api.post<ApiResponse<Rule>>('/api/admin/rules', data)
+  return api.post<ApiResponse<Rule>>('/rules', data)
 }
 
 // 更新规则
@@ -115,7 +115,7 @@ export const toggleRuleStatus = (id: number, status: 'enabled' | 'disabled') => 
 
 // 批量启用/禁用规则
 export const batchToggleRuleStatus = (ids: number[], status: 'enabled' | 'disabled') => {
-  return api.patch<ApiResponse<void>>('/api/admin/rules/batch-status', { ids, status })
+  return api.patch<ApiResponse<void>>('/rules/batch-status', { ids, status })
 }
 
 // 调整规则优先级
@@ -125,12 +125,12 @@ export const updateRulePriority = (id: number, priority: number) => {
 
 // 批量调整规则优先级
 export const batchUpdateRulePriority = (rules: { id: number; priority: number }[]) => {
-  return api.patch<ApiResponse<void>>('/api/admin/rules/batch-priority', { rules })
+  return api.patch<ApiResponse<void>>('/rules/batch-priority', { rules })
 }
 
 // 获取规则统计信息
 export const getRuleStats = () => {
-  return api.get<ApiResponse<RuleStats>>('/api/admin/rules/stats')
+  return api.get<ApiResponse<RuleStats>>('/rules/stats')
 }
 
 // 获取规则执行日志
@@ -140,14 +140,14 @@ export const getRuleExecutionLogs = (params: PageParams & {
   startTime?: string
   endTime?: string
 }) => {
-  return api.get<ApiResponse<PageResponse<RuleExecutionLog>>>('/api/admin/rules/logs', { params })
+  return api.get<ApiResponse<PageResponse<RuleExecutionLog>>>('/rules/logs', { params })
 }
 
 // 导入规则配置
 export const importRuleConfig = (file: File) => {
   const formData = new FormData()
   formData.append('file', file)
-  return api.post<ApiResponse<{ success: number; failed: number }>>('/api/admin/rules/import', formData, {
+  return api.post<ApiResponse<{ imported: number; failed: number }>>('/rules/import', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -155,8 +155,10 @@ export const importRuleConfig = (file: File) => {
 }
 
 // 导出规则配置
-export const exportRuleConfig = (ids?: number[]) => {
-  return api.post<Blob>('/api/admin/rules/export', { ids }, {
+export const exportRuleConfig = (ruleIds?: string[]) => {
+  const params = ruleIds ? { ids: ruleIds.join(',') } : {}
+  return api.get('/rules/export', {
+    params,
     responseType: 'blob'
   })
 }

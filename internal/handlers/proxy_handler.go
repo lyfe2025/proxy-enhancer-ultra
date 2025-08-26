@@ -28,6 +28,17 @@ func NewProxyHandler(proxyService *services.ProxyService, logger logger.Logger) 
 }
 
 // CreateProxyConfig 创建代理配置
+// @Summary 创建代理配置
+// @Description 创建新的代理配置，包括代理域名、目标URL等设置
+// @Tags 代理管理
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Param config body models.ProxyConfig true "代理配置"
+// @Success 201 {object} Response{data=models.ProxyConfig} "创建成功"
+// @Failure 400 {object} Response "请求参数错误"
+// @Failure 401 {object} Response "未授权"
+// @Router /proxy/configs [post]
 func (h *ProxyHandler) CreateProxyConfig(w http.ResponseWriter, r *http.Request) {
 	var config models.ProxyConfig
 	if err := json.NewDecoder(r.Body).Decode(&config); err != nil {
@@ -37,7 +48,7 @@ func (h *ProxyHandler) CreateProxyConfig(w http.ResponseWriter, r *http.Request)
 
 	if err := h.proxyService.CreateProxyConfig(&config); err != nil {
 		h.logger.WithFields(map[string]interface{}{
-			"error": err.Error(),
+			"error":  err.Error(),
 			"domain": config.ProxyDomain,
 		}).Error("Failed to create proxy config")
 		h.respondWithError(w, http.StatusBadRequest, err.Error())

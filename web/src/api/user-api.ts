@@ -7,44 +7,44 @@ export const getUserList = (params: PageParams & {
   status?: string
   role_id?: string
 }) => {
-  return api.get<ApiResponse<PageResponse<User>>>('/api/admin/users', { params })
+  return api.get<ApiResponse<PageResponse<User>>>('/users/admin', { params })
 }
 
 export const getUserDetail = (id: string) => {
-  return api.get<ApiResponse<User>>(`/api/admin/users/${id}`)
+  return api.get<ApiResponse<User>>(`/users/admin/${id}`)
 }
 
 export const createUser = (data: Omit<User, 'id' | 'created_at' | 'updated_at'>) => {
-  return api.post<ApiResponse<User>>('/api/admin/users', data)
+  return api.post<ApiResponse<User>>('/users/admin', data)
 }
 
 export const updateUser = (id: string, data: Partial<User>) => {
-  return api.put<ApiResponse<User>>(`/api/admin/users/${id}`, data)
+  return api.put<ApiResponse<User>>(`/users/admin/${id}`, data)
 }
 
 export const deleteUser = (id: string) => {
-  return api.delete<ApiResponse<void>>(`/api/admin/users/${id}`)
+  return api.delete<ApiResponse<void>>(`/users/admin/${id}`)
 }
 
 export const batchDeleteUser = (ids: string[]) => {
-  return api.delete<ApiResponse<void>>('/api/admin/users/batch', { data: { ids } })
+  return api.delete<ApiResponse<void>>('/users/admin/batch', { data: { ids } })
 }
 
 export const toggleUserStatus = (id: string, status: 'active' | 'inactive' | 'locked') => {
-  return api.patch<ApiResponse<void>>(`/api/admin/users/${id}/status`, { status })
+  return api.patch<ApiResponse<void>>(`/users/admin/${id}/status`, { status })
 }
 
 export const resetUserPassword = (id: string, newPassword: string) => {
-  return api.patch<ApiResponse<void>>(`/api/admin/users/${id}/password`, { password: newPassword })
+  return api.patch<ApiResponse<void>>(`/users/admin/${id}/password`, { password: newPassword })
 }
 
 // 用户信息管理 (管理员API)
 export const getCurrentUser = () => {
-  return api.get<ApiResponse<User>>('/api/admin/users/profile')
+  return api.get<ApiResponse<User>>('/users/profile')
 }
 
 export const updateCurrentUser = (data: Partial<UserFormData>) => {
-  return api.put<ApiResponse<User>>('/api/admin/users/profile', data)
+  return api.put<ApiResponse<User>>('/users/profile', data)
 }
 
 export const changePassword = (data: {
@@ -52,13 +52,13 @@ export const changePassword = (data: {
   new_password: string
   confirm_password: string
 }) => {
-  return api.patch<ApiResponse<void>>('/api/admin/users/password', data)
+  return api.patch<ApiResponse<void>>('/users/change-password', data)
 }
 
 export const uploadAvatar = (file: File) => {
   const formData = new FormData()
   formData.append('avatar', file)
-  return api.post<ApiResponse<{ url: string }>>('/api/admin/users/avatar', formData, {
+  return api.post<ApiResponse<{ url: string }>>('/users/avatar', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -67,16 +67,16 @@ export const uploadAvatar = (file: File) => {
 
 // 用户偏好设置
 export const getUserPreferences = () => {
-  return api.get<ApiResponse<Record<string, any>>>('/api/admin/users/preferences')
+  return api.get<ApiResponse<Record<string, any>>>('/users/preferences')
 }
 
 export const updateUserPreferences = (preferences: Record<string, any>) => {
-  return api.patch<ApiResponse<void>>('/api/admin/users/preferences', { preferences })
+  return api.patch<ApiResponse<void>>('/users/preferences', { preferences })
 }
 
 // 用户活动记录
 export const getUserActivities = (userId?: string, params?: PageParams) => {
-  const url = userId ? `/api/admin/users/${userId}/activities` : '/api/admin/users/activities'
+  const url = userId ? `/users/admin/${userId}/activities` : '/users/admin/activities'
   return api.get<ApiResponse<PageResponse<any>>>(url, { params })
 }
 
@@ -91,7 +91,7 @@ export const getUserStats = () => {
     new_users_today: number
     new_users_week: number
     new_users_month: number
-  }>>('/api/admin/users/stats')
+  }>>('/monitoring/dashboard')
 }
 
 // 导出用户数据
@@ -100,7 +100,7 @@ export const exportUsers = (params?: {
   role_id?: string
   format?: 'csv' | 'excel'
 }) => {
-  return api.get<Blob>('/api/admin/users/export', {
+  return api.get<Blob>('/users/admin/export', {
     params,
     responseType: 'blob'
   })
@@ -114,7 +114,7 @@ export const importUsers = (file: File) => {
     success_count: number
     failed_count: number
     errors: string[]
-  }>>('/api/admin/users/import', formData, {
+  }>>('/users/admin/import', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }

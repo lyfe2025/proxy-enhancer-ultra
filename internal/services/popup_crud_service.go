@@ -135,7 +135,7 @@ func (s *PopupCRUDService) UpdatePopup(id uint, req *UpdatePopupRequest) error {
 		updateData["style"] = req.Style
 	}
 	if req.Enabled != nil {
-		updateData["enabled"] = *req.Enabled
+		updateData["is_active"] = *req.Enabled
 	}
 
 	updateData["updated_at"] = time.Now()
@@ -225,7 +225,7 @@ func (s *PopupCRUDService) ListPopups(page, pageSize int, proxyConfigID *uint, p
 		query = query.Where("popup_type = ?", popupType)
 	}
 	if enabled != nil {
-		query = query.Where("enabled = ?", *enabled)
+		query = query.Where("is_active = ?", *enabled)
 	}
 
 	// 获取总数
@@ -277,7 +277,7 @@ func (s *PopupCRUDService) TogglePopupStatus(id uint) error {
 // GetPopupsByProxyConfig 根据代理配置获取弹窗
 func (s *PopupCRUDService) GetPopupsByProxyConfig(proxyConfigID uint) ([]*models.Popup, error) {
 	var popups []*models.Popup
-	if err := s.db.Where("proxy_config_id = ? AND enabled = ?", proxyConfigID, true).Order("created_at ASC").Find(&popups).Error; err != nil {
+	if err := s.db.Where("proxy_config_id = ? AND is_active = ?", proxyConfigID, true).Order("created_at ASC").Find(&popups).Error; err != nil {
 		return nil, fmt.Errorf("failed to get popups by proxy config: %w", err)
 	}
 

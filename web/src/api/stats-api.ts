@@ -2,29 +2,23 @@ import api from './index'
 import type { ApiResponse } from './index'
 import type { SystemStats, SystemHealth } from './system-types'
 
-// 系统统计API
-export const getSystemStats = () => {
-  return api.get<ApiResponse<SystemStats>>('/system/stats')
-}
+// 获取系统统计数据
+export const getSystemStats = (params?: {
+  start_date?: string
+  end_date?: string
+  granularity?: 'hour' | 'day' | 'week' | 'month'
+}) => api.get<SystemStats>('/monitoring/dashboard', { params })
 
-// 系统监控API
-export const getSystemHealth = () => {
-  return api.get<ApiResponse<SystemHealth>>('/system/health')
-}
+// 获取健康检查状态
+export const getHealthStatus = () => 
+  api.get<HealthStatus>('/monitoring/health')
 
-// 性能监控
-export const getPerformanceMetrics = (timeRange?: 'hour' | 'day' | 'week' | 'month') => {
-  return api.get<ApiResponse<{
-    cpu_usage: Array<{ timestamp: string; value: number }>
-    memory_usage: Array<{ timestamp: string; value: number }>
-    disk_usage: Array<{ timestamp: string; value: number }>
-    network_io: Array<{ timestamp: string; in: number; out: number }>
-    database_connections: Array<{ timestamp: string; active: number; idle: number }>
-    response_times: Array<{ timestamp: string; avg: number; p95: number; p99: number }>
-  }>>('/system/metrics/performance', {
-    params: { timeRange }
-  })
-}
+// 获取性能指标
+export const getPerformanceMetrics = (params?: {
+  start_date?: string
+  end_date?: string
+  metric_type?: 'cpu' | 'memory' | 'disk' | 'network'
+}) => api.get<PerformanceMetrics>('/monitoring/metrics/system', { params })
 
 // 业务统计
 export const getBusinessStats = () => {
@@ -48,35 +42,15 @@ export const getBusinessStats = () => {
       page_views: number
       error_rate: number
     }
-  }>>('/system/stats/business')
+  }>>('/monitoring/stats/business')
 }
 
-// 用户活跃度统计
-export const getUserActivityStats = (timeRange?: string) => {
-  return api.get<ApiResponse<{
-    online_users: number
-    daily_active_users: number
-    weekly_active_users: number
-    monthly_active_users: number
-    user_growth: Array<{
-      date: string
-      new_users: number
-      total_users: number
-    }>
-    activity_heatmap: Array<{
-      hour: number
-      day: number
-      count: number
-    }>
-    top_pages: Array<{
-      path: string
-      views: number
-      unique_visitors: number
-    }>
-  }>>('/system/stats/user-activity', {
-    params: { timeRange }
-  })
-}
+// 获取用户活动统计
+export const getUserActivityStats = (params?: {
+  start_date?: string
+  end_date?: string
+  user_id?: string
+}) => api.get<UserActivityStats>('/monitoring/dashboard', { params })
 
 // 系统负载统计
 export const getSystemLoadStats = () => {
@@ -105,37 +79,15 @@ export const getSystemLoadStats = () => {
       message: string
       timestamp: string
     }>
-  }>>('/system/stats/load')
+  }>>('/monitoring/stats/load')
 }
 
-// 错误统计
-export const getErrorStats = (timeRange?: string) => {
-  return api.get<ApiResponse<{
-    total_errors: number
-    error_rate: number
-    error_trend: Array<{
-      timestamp: string
-      count: number
-    }>
-    error_types: Array<{
-      type: string
-      count: number
-      percentage: number
-    }>
-    top_errors: Array<{
-      message: string
-      count: number
-      last_occurrence: string
-    }>
-    error_distribution: Array<{
-      status_code: number
-      count: number
-      percentage: number
-    }>
-  }>>('/system/stats/errors', {
-    params: { timeRange }
-  })
-}
+// 获取错误统计
+export const getErrorStats = (params?: {
+  start_date?: string
+  end_date?: string
+  error_type?: string
+}) => api.get<ErrorStats>('/monitoring/dashboard', { params })
 
 // API使用统计
 export const getApiStats = (timeRange?: string) => {
@@ -159,7 +111,7 @@ export const getApiStats = (timeRange?: string) => {
       hour: number
       count: number
     }>
-  }>>('/system/stats/api', {
+  }>>('/monitoring/stats/api', {
     params: { timeRange }
   })
 }
@@ -187,7 +139,7 @@ export const getDatabaseStats = () => {
       index: string
       usage_count: number
     }>
-  }>>('/system/stats/database')
+  }>>('/monitoring/stats/database')
 }
 
 // 缓存统计
@@ -204,44 +156,67 @@ export const getCacheStats = () => {
       hits: number
       size: number
     }>
-  }>>('/system/stats/cache')
+  }>>('/monitoring/stats/cache')
 }
 
-// 实时统计
-export const getRealtimeStats = () => {
-  return api.get<ApiResponse<{
-    online_users: number
-    cpu_usage: number
-    memory_usage: number
-    active_requests: number
-    recent_activities: Array<{
-      user: string
-      action: string
-      timestamp: string
-    }>
-  }>>('/system/stats/realtime')
-}
+// 获取实时统计
+export const getRealtimeStats = () => 
+  api.get<RealtimeStats>('/monitoring/dashboard')
 
-// 导出统计报表
-export const exportStatsReport = (type: string, timeRange: string, format: 'pdf' | 'excel' | 'csv') => {
-  return api.get<Blob>(`/system/stats/export/${type}`, {
-    params: { timeRange, format },
-    responseType: 'blob'
-  })
-}
+// 导出统计报告
+export const exportStatsReport = (params: {
+  start_date: string
+  end_date: string
+  report_type: 'summary' | 'detailed' | 'custom'
+  format: 'pdf' | 'excel' | 'csv'
+  include_charts?: boolean
+}) => api.get<Blob>('/monitoring/dashboard', { 
+  params,
+  responseType: 'blob'
+})
+
+// 获取代理统计
+export const getProxyStats = (params?: {
+  start_date?: string
+  end_date?: string
+  proxy_id?: string
+}) => api.get<ProxyStats>('/monitoring/metrics/proxy', { params })
+
+// 获取系统信息
+export const getSystemInfo = () => 
+  api.get<SystemInfo>('/monitoring/health')
+
+// 获取服务状态
+export const getServiceStatus = () => 
+  api.get<ServiceStatus[]>('/monitoring/health')
+
+// 获取趋势分析
+export const getTrendAnalysis = (params: {
+  metric: string
+  start_date: string
+  end_date: string
+  prediction_days?: number
+}) => api.get<TrendAnalysis>('/monitoring/dashboard', { params })
+
+// 获取对比分析
+export const getComparisonAnalysis = (params: {
+  metric: string
+  current_period: { start: string; end: string }
+  comparison_period: { start: string; end: string }
+}) => api.get<ComparisonAnalysis>('/monitoring/dashboard', { params })
 
 // 统计API对象导出
 export const statsApi = {
   getSystemStats,
-  getSystemHealth,
+  getHealthStatus,
   getPerformanceMetrics,
-  getBusinessStats,
   getUserActivityStats,
-  getSystemLoadStats,
   getErrorStats,
-  getApiStats,
-  getDatabaseStats,
-  getCacheStats,
   getRealtimeStats,
-  exportStatsReport
+  exportStatsReport,
+  getProxyStats,
+  getSystemInfo,
+  getServiceStatus,
+  getTrendAnalysis,
+  getComparisonAnalysis
 }

@@ -124,7 +124,7 @@ func (s *RuleCRUDService) UpdateRule(id uuid.UUID, req *UpdateRuleRequest) error
 		updateData["priority"] = *req.Priority
 	}
 	if req.Enabled != nil {
-		updateData["enabled"] = *req.Enabled
+		updateData["is_active"] = *req.Enabled
 	}
 
 	updateData["updated_at"] = time.Now()

@@ -25,6 +25,16 @@ func NewAuthHandler(userService *services.UserService, logger logger.Logger) *Au
 }
 
 // Login 用户登录
+// @Summary 用户登录
+// @Description 使用用户名和密码进行登录认证
+// @Tags 认证
+// @Accept json
+// @Produce json
+// @Param request body services.LoginRequest true "登录请求"
+// @Success 200 {object} Response{data=services.LoginResponse} "登录成功"
+// @Failure 400 {object} Response "请求参数错误"
+// @Failure 401 {object} Response "认证失败"
+// @Router /auth/login [post]
 func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 	var req services.LoginRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -59,6 +69,15 @@ func (h *AuthHandler) Login(w http.ResponseWriter, r *http.Request) {
 }
 
 // Register 用户注册
+// @Summary 用户注册
+// @Description 创建新的用户账号
+// @Tags 认证
+// @Accept json
+// @Produce json
+// @Param request body services.CreateUserRequest true "注册请求"
+// @Success 201 {object} Response{data=services.UserInfo} "注册成功"
+// @Failure 400 {object} Response "请求参数错误"
+// @Router /auth/register [post]
 func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req services.CreateUserRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -102,6 +121,16 @@ func (h *AuthHandler) Register(w http.ResponseWriter, r *http.Request) {
 }
 
 // RefreshToken 刷新token
+// @Summary 刷新访问令牌
+// @Description 使用刷新令牌获取新的访问令牌
+// @Tags 认证
+// @Accept json
+// @Produce json
+// @Param request body object{token=string} true "刷新令牌请求"
+// @Success 200 {object} Response{data=services.LoginResponse} "令牌刷新成功"
+// @Failure 400 {object} Response "请求参数错误"
+// @Failure 401 {object} Response "令牌无效"
+// @Router /auth/refresh [post]
 func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 	var req struct {
 		Token string `json:"token"`
@@ -130,6 +159,13 @@ func (h *AuthHandler) RefreshToken(w http.ResponseWriter, r *http.Request) {
 }
 
 // Logout 用户登出
+// @Summary 用户登出
+// @Description 登出当前用户，清除认证状态
+// @Tags 认证
+// @Produce json
+// @Security BearerAuth
+// @Success 200 {object} Response "登出成功"
+// @Router /auth/logout [post]
 func (h *AuthHandler) Logout(w http.ResponseWriter, r *http.Request) {
 	userID, _, _, ok := middleware.GetUserFromContext(r.Context())
 	if ok {

@@ -48,6 +48,7 @@ load_env_config() {
         
         print_message $GREEN "✅ 配置文件加载成功"
         print_message $CYAN "   🔧 API服务器地址：$SERVER_HOST:$SERVER_PORT"
+        print_message $CYAN "   📖 API文档地址：http://localhost:$SERVER_PORT/swagger/index.html"
         print_message $CYAN "   🎨 管理后台访问地址：localhost:$VITE_DEV_PORT"
         print_message $CYAN "   🔗 API地址：$VITE_API_BASE_URL"
     else
@@ -188,6 +189,7 @@ start_backend() {
         print_message $GREEN "✅ 后端服务启动成功！PID: $backend_pid"
         print_message $CYAN "📊 后端日志：$BACKEND_LOG_FILE"
         print_message $CYAN "🔧 API服务器地址：http://$SERVER_HOST:$SERVER_PORT"
+        print_message $CYAN "📖 API文档地址：http://localhost:$SERVER_PORT/swagger/index.html"
     else
         print_message $RED "❌ 后端服务启动失败，请检查日志：$BACKEND_LOG_FILE"
         rm -f "$BACKEND_PID_FILE"
@@ -346,6 +348,7 @@ show_status() {
         local backend_pid=$(cat "$BACKEND_PID_FILE")
         print_message $GREEN "✅ 后端服务：运行中 (PID: $backend_pid)"
         print_message $CYAN "   🔧 API服务器地址：http://$SERVER_HOST:$SERVER_PORT"
+        print_message $CYAN "   📖 API文档地址：http://localhost:$SERVER_PORT/swagger/index.html"
         print_message $CYAN "   📊 日志：$BACKEND_LOG_FILE"
     else
         print_message $RED "❌ 后端服务：未运行"
@@ -462,10 +465,15 @@ show_help() {
     echo "  - 清理环境：停止所有服务并清理"
     echo "  - 强制清理端口：清理端口占用"
     echo ""
+    echo "📖 API文档功能："
+    echo "  - 自动提供 Swagger API 文档界面"
+    echo "  - 支持在线测试 API 接口"
+    echo "  - 访问地址：http://SERVER_HOST:SERVER_PORT/swagger/index.html"
+    echo ""
     echo "⚙️  配置管理："
     echo "  - 所有配置从 .env 文件读取"
     echo "  - 支持动态端口和地址配置"
-    echo "  - 实时显示正确的访问地址"
+    echo "  - 实时显示正确的访问地址（包括API文档）"
     echo "  - 自动检测和清理端口占用"
     echo ""
     echo "⚠️  注意事项："
@@ -502,6 +510,7 @@ quick_start() {
     echo "========================================"
     print_message $CYAN "🎨 管理后台界面：http://localhost:$VITE_DEV_PORT"
     print_message $CYAN "🔧 API服务器地址：http://$SERVER_HOST:$SERVER_PORT"
+    print_message $CYAN "📖 API文档地址：http://localhost:$SERVER_PORT/swagger/index.html"
     print_message $CYAN "🔗 API地址：$VITE_API_BASE_URL"
     print_message $CYAN "📱 应用标题：$VITE_APP_TITLE"
     print_message $CYAN "📊 后端日志：$BACKEND_LOG_FILE"
@@ -644,9 +653,10 @@ main() {
     # 显示欢迎信息
     print_message $GREEN "🎉 欢迎使用智能反向代理平台统一启动脚本！"
     print_message $CYAN "📁 项目路径：$PROJECT_ROOT"
-            print_message $CYAN "🔧 API服务器路径：$BACKEND_DIR"
-        print_message $CYAN "🎨 管理后台路径：$FRONTEND_DIR"
+    print_message $CYAN "🔧 API服务器路径：$BACKEND_DIR"
+    print_message $CYAN "🎨 管理后台路径：$FRONTEND_DIR"
     print_message $CYAN "⚙️  配置文件：$ENV_FILE"
+    print_message $CYAN "📖 API文档：启动后访问 /swagger/index.html"
     echo ""
     
     # 启动主菜单

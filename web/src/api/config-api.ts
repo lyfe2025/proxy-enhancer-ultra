@@ -4,78 +4,78 @@ import type { SystemConfig } from './system-types'
 
 // 系统配置API
 export const getSystemConfigs = (category?: string) => {
-  return api.get<ApiResponse<SystemConfig[]>>('/system/configs', {
+  return api.get<ApiResponse<SystemConfig[]>>('/monitoring/dashboard', {
     params: { category }
   })
 }
 
 export const getSystemConfig = (key: string) => {
-  return api.get<ApiResponse<{ key: string; value: any; description?: string }>>(`/system/configs/${key}`)
+  return api.get<ApiResponse<{ key: string; value: any; description?: string }>>(`/monitoring/dashboard/${key}`)
 }
 
 export const updateSystemConfig = (key: string, value: string) => {
-  return api.patch<ApiResponse<void>>('/system/configs', { key, value })
+  return api.patch<ApiResponse<void>>('/monitoring/dashboard', { key, value })
 }
 
 export const batchUpdateSystemConfigs = (configs: { key: string; value: string }[]) => {
-  return api.patch<ApiResponse<void>>('/system/configs/batch', { configs })
+  return api.patch<ApiResponse<void>>('/monitoring/dashboard', { configs })
 }
 
 // 按分类获取配置
 export const getBasicConfig = () => {
-  return api.get<ApiResponse<SystemConfig['basic']>>('/system/configs/basic')
+  return api.get<ApiResponse<SystemConfig['basic']>>('/monitoring/dashboard')
 }
 
 export const updateBasicConfig = (config: SystemConfig['basic']) => {
-  return api.patch<ApiResponse<void>>('/system/configs/basic', config)
+  return api.patch<ApiResponse<void>>('/monitoring/dashboard', config)
 }
 
 export const getSecurityConfig = () => {
-  return api.get<ApiResponse<SystemConfig['security']>>('/system/configs/security')
+  return api.get<ApiResponse<SystemConfig['security']>>('/monitoring/dashboard')
 }
 
 export const updateSecurityConfig = (config: SystemConfig['security']) => {
-  return api.patch<ApiResponse<void>>('/system/configs/security', config)
+  return api.patch<ApiResponse<void>>('/monitoring/dashboard', config)
 }
 
 export const getEmailConfig = () => {
-  return api.get<ApiResponse<SystemConfig['email']>>('/system/configs/email')
+  return api.get<ApiResponse<SystemConfig['email']>>('/monitoring/dashboard')
 }
 
 export const updateEmailConfig = (config: SystemConfig['email']) => {
-  return api.patch<ApiResponse<void>>('/system/configs/email', config)
+  return api.patch<ApiResponse<void>>('/monitoring/dashboard', config)
 }
 
 export const getSmsConfig = () => {
-  return api.get<ApiResponse<SystemConfig['sms']>>('/system/configs/sms')
+  return api.get<ApiResponse<SystemConfig['sms']>>('/monitoring/dashboard')
 }
 
 export const updateSmsConfig = (config: SystemConfig['sms']) => {
-  return api.patch<ApiResponse<void>>('/system/configs/sms', config)
+  return api.patch<ApiResponse<void>>('/monitoring/dashboard', config)
 }
 
 export const getStorageConfig = () => {
-  return api.get<ApiResponse<SystemConfig['storage']>>('/system/configs/storage')
+  return api.get<ApiResponse<SystemConfig['storage']>>('/monitoring/dashboard')
 }
 
 export const updateStorageConfig = (config: SystemConfig['storage']) => {
-  return api.patch<ApiResponse<void>>('/system/configs/storage', config)
+  return api.patch<ApiResponse<void>>('/monitoring/dashboard', config)
 }
 
 export const getLoggingConfig = () => {
-  return api.get<ApiResponse<SystemConfig['logging']>>('/system/configs/logging')
+  return api.get<ApiResponse<SystemConfig['logging']>>('/monitoring/dashboard')
 }
 
 export const updateLoggingConfig = (config: SystemConfig['logging']) => {
-  return api.patch<ApiResponse<void>>('/system/configs/logging', config)
+  return api.patch<ApiResponse<void>>('/monitoring/dashboard', config)
 }
 
 export const getMonitoringConfig = () => {
-  return api.get<ApiResponse<SystemConfig['monitoring']>>('/system/configs/monitoring')
+  return api.get<ApiResponse<SystemConfig['monitoring']>>('/monitoring/dashboard')
 }
 
 export const updateMonitoringConfig = (config: SystemConfig['monitoring']) => {
-  return api.patch<ApiResponse<void>>('/system/configs/monitoring', config)
+  return api.patch<ApiResponse<void>>('/monitoring/dashboard', config)
 }
 
 // 配置验证
@@ -83,7 +83,7 @@ export const validateConfig = (key: string, value: any) => {
   return api.post<ApiResponse<{
     valid: boolean
     errors?: string[]
-  }>>('/system/configs/validate', { key, value })
+  }>>('/monitoring/dashboard/validate', { key, value })
 }
 
 // 测试配置
@@ -91,28 +91,28 @@ export const testEmailConfig = (config: SystemConfig['email']) => {
   return api.post<ApiResponse<{
     success: boolean
     message: string
-  }>>('/system/configs/test/email', config)
+  }>>('/monitoring/dashboard', config)
 }
 
 export const testSmsConfig = (config: SystemConfig['sms']) => {
   return api.post<ApiResponse<{
     success: boolean
     message: string
-  }>>('/system/configs/test/sms', config)
+  }>>('/monitoring/dashboard', config)
 }
 
 // 重置配置
 export const resetConfig = (key: string) => {
-  return api.delete<ApiResponse<void>>(`/system/configs/${key}`)
+  return api.delete<ApiResponse<void>>(`/monitoring/dashboard/${key}`)
 }
 
 export const resetAllConfigs = () => {
-  return api.delete<ApiResponse<void>>('/system/configs/all')
+  return api.delete<ApiResponse<void>>('/monitoring/dashboard/all')
 }
 
 // 导出配置
 export const exportConfigs = (category?: string) => {
-  return api.get<Blob>('/system/configs/export', {
+  return api.get<Blob>('/monitoring/dashboard/export', {
     params: { category },
     responseType: 'blob'
   })
@@ -126,7 +126,7 @@ export const importConfigs = (file: File) => {
     success_count: number
     failed_count: number
     errors: string[]
-  }>>('/system/configs/import', formData, {
+  }>>('/monitoring/dashboard/import', formData, {
     headers: {
       'Content-Type': 'multipart/form-data'
     }
@@ -142,7 +142,7 @@ export const getConfigHistory = (key: string) => {
     new_value: any
     operator: string
     created_at: string
-  }>>>(`/system/configs/${key}/history`)
+  }>>>(`/monitoring/dashboard/${key}/history`)
 }
 
 // 系统配置API对象导出

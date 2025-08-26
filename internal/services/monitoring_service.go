@@ -132,7 +132,7 @@ func (s *MonitoringService) CollectProxyMetrics() (*ProxyMetrics, error) {
 	}
 
 	// 获取活跃代理数
-	if err := s.db.Model(&models.ProxyConfig{}).Where("enabled = ?", true).Count(&metrics.ActiveProxies).Error; err != nil {
+	if err := s.db.Model(&models.ProxyConfig{}).Where("is_active = ?", true).Count(&metrics.ActiveProxies).Error; err != nil {
 		return nil, err
 	}
 
@@ -168,7 +168,7 @@ func (s *MonitoringService) GetOverallStats() (*OverallStats, error) {
 	}
 
 	// 获取活跃代理数
-	if err := s.db.Model(&models.ProxyConfig{}).Where("enabled = ?", true).Count(&stats.ActiveProxies).Error; err != nil {
+	if err := s.db.Model(&models.ProxyConfig{}).Where("is_active = ?", true).Count(&stats.ActiveProxies).Error; err != nil {
 		return nil, err
 	}
 
@@ -178,7 +178,7 @@ func (s *MonitoringService) GetOverallStats() (*OverallStats, error) {
 	}
 
 	// 获取活跃弹窗数
-	if err := s.db.Model(&models.Popup{}).Where("enabled = ?", true).Count(&stats.ActivePopups).Error; err != nil {
+	if err := s.db.Model(&models.Popup{}).Where("is_active = ?", true).Count(&stats.ActivePopups).Error; err != nil {
 		return nil, err
 	}
 

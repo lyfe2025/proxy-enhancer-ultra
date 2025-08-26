@@ -1,3 +1,23 @@
+// @title Proxy Enhancer Ultra API
+// @version 1.0
+// @description 智能反向代理增强平台API文档
+// @termsOfService http://swagger.io/terms/
+
+// @contact.name API Support
+// @contact.url http://www.swagger.io/support
+// @contact.email support@swagger.io
+
+// @license.name MIT
+// @license.url https://opensource.org/licenses/MIT
+
+// @host localhost:8080
+// @BasePath /api
+
+// @securityDefinitions.apikey BearerAuth
+// @in header
+// @name Authorization
+// @description Type "Bearer" followed by a space and JWT token.
+
 package main
 
 import (
@@ -18,8 +38,12 @@ import (
 	"proxy-enhancer-ultra/internal/services"
 	"proxy-enhancer-ultra/pkg/logger"
 
+	_ "proxy-enhancer-ultra/docs" // 导入生成的swagger文档
+
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	swaggerFiles "github.com/swaggo/files"
+	ginSwagger "github.com/swaggo/gin-swagger"
 )
 
 func main() {
@@ -119,6 +143,9 @@ func main() {
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok", "message": "Server is running"})
 	})
+
+	// Swagger API文档
+	r.GET("/swagger/*any", ginSwagger.WrapHandler(swaggerFiles.Handler))
 
 	// 需要认证的路由
 	protected := r.Group("/api")

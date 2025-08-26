@@ -109,47 +109,47 @@ export const getPopupList = (params: PageParams & {
   type?: string
   status?: string
 }) => {
-  return api.get<ApiResponse<PageResponse<PopupConfig>>>('/api/admin/popups', { params })
+  return api.get<ApiResponse<PageResponse<PopupConfig>>>('/popups', { params })
 }
 
 // 获取弹窗详情
 export const getPopupDetail = (id: number) => {
-  return api.get<ApiResponse<PopupConfig>>(`/api/admin/popups/${id}`)
+  return api.get<ApiResponse<PopupConfig>>(`/popups/${id}`)
 }
 
 // 创建弹窗
 export const createPopup = (data: Omit<PopupConfig, 'id' | 'createdAt' | 'updatedAt'>) => {
-  return api.post<ApiResponse<PopupConfig>>('/api/admin/popups', data)
+  return api.post<ApiResponse<PopupConfig>>('/popups', data)
 }
 
 // 更新弹窗
 export const updatePopup = (id: number, data: Partial<PopupConfig>) => {
-  return api.put<ApiResponse<PopupConfig>>(`/api/admin/popups/${id}`, data)
+  return api.put<ApiResponse<PopupConfig>>(`/popups/${id}`, data)
 }
 
 // 删除弹窗
 export const deletePopup = (id: number) => {
-  return api.delete<ApiResponse<void>>(`/api/admin/popups/${id}`)
+  return api.delete<ApiResponse<void>>(`/popups/${id}`)
 }
 
 // 批量删除弹窗
 export const batchDeletePopup = (ids: number[]) => {
-  return api.delete<ApiResponse<void>>('/api/admin/popups/batch', { data: { ids } })
+  return api.delete<ApiResponse<void>>('/popups/batch', { data: { ids } })
 }
 
 // 启用/禁用弹窗
 export const togglePopupStatus = (id: number, status: 'active' | 'inactive') => {
-  return api.patch<ApiResponse<void>>(`/api/admin/popups/${id}/status`, { status })
+  return api.patch<ApiResponse<void>>(`/popups/${id}/status`, { status })
 }
 
 // 复制弹窗
 export const duplicatePopup = (id: number, name?: string) => {
-  return api.post<ApiResponse<PopupConfig>>(`/api/admin/popups/${id}/duplicate`, { name })
+  return api.post<ApiResponse<PopupConfig>>(`/popups/${id}/duplicate`, { name })
 }
 
 // 预览弹窗
 export const previewPopup = (id: number) => {
-  return api.get<ApiResponse<{ html: string; css: string; js: string }>>(`/api/admin/popups/${id}/preview`)
+  return api.get<ApiResponse<{ html: string; css: string; js: string }>>(`/popups/${id}/preview`)
 }
 
 // 获取提交数据列表
@@ -159,42 +159,42 @@ export const getSubmissionList = (params: PageParams & {
   endTime?: string
   processed?: boolean
 }) => {
-  return api.get<ApiResponse<PageResponse<SubmissionData>>>('/api/admin/submissions', { params })
+  return api.get<ApiResponse<PageResponse<SubmissionData>>>('/submissions', { params })
 }
 
 // 获取提交数据详情
-export const getSubmissionDetail = (id: number) => {
-  return api.get<ApiResponse<SubmissionData>>(`/api/admin/submissions/${id}`)
+export const getSubmissionDetail = (id: string) => {
+  return api.get<ApiResponse<SubmissionData>>(`/submissions/${id}`)
 }
 
 // 标记提交数据为已处理
-export const markSubmissionProcessed = (id: number) => {
-  return api.patch<ApiResponse<void>>(`/api/admin/submissions/${id}/processed`)
+export const markSubmissionProcessed = (id: string) => {
+  return api.patch<ApiResponse<void>>(`/submissions/${id}/processed`)
 }
 
 // 批量标记提交数据为已处理
-export const batchMarkSubmissionProcessed = (ids: number[]) => {
-  return api.patch<ApiResponse<void>>('/api/admin/submissions/batch-processed', { ids })
+export const batchMarkSubmissionProcessed = (ids: string[]) => {
+  return api.patch<ApiResponse<void>>('/submissions/batch/processed', { ids })
 }
 
 // 删除提交数据
-export const deleteSubmission = (id: number) => {
-  return api.delete<ApiResponse<void>>(`/api/admin/submissions/${id}`)
+export const deleteSubmission = (id: string) => {
+  return api.delete<ApiResponse<void>>(`/submissions/${id}`)
 }
 
 // 批量删除提交数据
-export const batchDeleteSubmission = (ids: number[]) => {
-  return api.delete<ApiResponse<void>>('/api/admin/submissions/batch', { data: { ids } })
+export const batchDeleteSubmission = (ids: string[]) => {
+  return api.delete<ApiResponse<void>>('/submissions/batch', { data: { ids } })
 }
 
 // 添加标签到提交数据
-export const addSubmissionTags = (id: number, tags: string[]) => {
-  return api.patch<ApiResponse<void>>(`/api/admin/submissions/${id}/tags`, { tags })
+export const addSubmissionTags = (id: string, tags: string[]) => {
+  return api.patch<ApiResponse<void>>(`/submissions/${id}/tags`, { tags })
 }
 
 // 获取数据统计
 export const getDataStats = () => {
-  return api.get<ApiResponse<DataStats>>('/api/admin/stats')
+  return api.get<ApiResponse<DataStats>>('/monitoring/dashboard')
 }
 
 // 导出提交数据
@@ -204,7 +204,7 @@ export const exportSubmissions = (params: {
   endTime?: string
   format?: 'csv' | 'excel' | 'json'
 }) => {
-  return api.post<Blob>('/api/admin/submissions/export', params, {
+  return api.post<Blob>('/admin/submissions/export', params, {
     responseType: 'blob'
   })
 }
